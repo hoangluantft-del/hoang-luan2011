@@ -82,65 +82,46 @@ service cloud.firestore {
         && data.createdAt is timestamp;
     }
 
-    // Public tribute wishes for teachers (no PII stored)
+    // Public tribute wishes for teachers (open guest posting without login required)
     match /wishes/{wishId} {
       allow get: if isValidId(wishId) && existing().isPublic == true;
       allow list: if resource.data.isPublic == true;
-      allow create: if isVerifiedUser()
-        && isValidId(wishId)
+      allow create: if isValidId(wishId)
         && isValidWish(incoming())
-        && incoming().authorUid == request.auth.uid
         && incoming().createdAt == request.time;
-      allow update: if isVerifiedUser()
+      allow update: if isAdmin()
         && isValidId(wishId)
         && isValidWish(incoming())
-        && (existing().authorUid == request.auth.uid || isAdmin())
         && incoming().authorUid == existing().authorUid
-        && incoming().createdAt == existing().createdAt
-        && incoming().diff(existing()).affectedKeys().hasOnly([
-          'teacherName',
-          'senderName',
-          'cohort',
-          'category',
-          'message',
-          'imageDataUrl'
-        ]);
-      allow delete: if isVerifiedUser()
-        && isValidId(wishId)
-        && (existing().authorUid == request.auth.uid || isAdmin());
+        && incoming().createdAt == existing().createdAt;
+      allow delete: if isAdmin() && isValidId(wishId);
 
-      // Per-wish flower reactions
+      // Per-wish flower reactions (open guest flower toggling without login required)
       match /flowers/{userId} {
         allow get: if isValidId(wishId) && isValidId(userId) && existing().isPublic == true;
         allow list: if resource.data.isPublic == true;
-        allow create: if isVerifiedUser()
-          && isValidId(wishId)
+        allow create: if isValidId(wishId)
           && isValidId(userId)
-          && userId == request.auth.uid
           && exists(/databases/$(database)/documents/wishes/$(wishId))
           && isValidFlowerOffering(incoming())
-          && incoming().userId == request.auth.uid
+          && incoming().userId == userId
           && incoming().createdAt == request.time;
-        allow delete: if isVerifiedUser()
-          && isValidId(wishId)
+        allow delete: if isValidId(wishId)
           && isValidId(userId)
-          && (userId == request.auth.uid || isAdmin());
+          && (existing().userId == userId || isAdmin());
       }
     }
 
-    // Bouquet flower offerings for teachers
+    // Bouquet flower offerings for teachers (open guest flower toggling without login required)
     match /bouquetFlowers/{userId} {
       allow get: if isValidId(userId) && existing().isPublic == true;
       allow list: if resource.data.isPublic == true;
-      allow create: if isVerifiedUser()
-        && isValidId(userId)
-        && userId == request.auth.uid
+      allow create: if isValidId(userId)
         && isValidFlowerOffering(incoming())
-        && incoming().userId == request.auth.uid
+        && incoming().userId == userId
         && incoming().createdAt == request.time;
-      allow delete: if isVerifiedUser()
-        && isValidId(userId)
-        && (userId == request.auth.uid || isAdmin());
+      allow delete: if isValidId(userId)
+        && (existing().userId == userId || isAdmin());
     }
   }
 }

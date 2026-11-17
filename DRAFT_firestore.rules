@@ -1,0 +1,137 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && request.auth.token.email == 'hoangluantft@gmail.com';
+    }
+
+    function isValidWish(data) {
+      return data.keys().hasAll([
+          'teacherName',
+          'senderName',
+          'cohort',
+          'category',
+          'message',
+          'authorUid',
+          'isPublic',
+          'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'teacherName',
+          'senderName',
+          'cohort',
+          'category',
+          'message',
+          'authorUid',
+          'isPublic',
+          'createdAt'
+        ])
+        && data.teacherName is string && data.teacherName.size() >= 2 && data.teacherName.size() <= 100
+        && data.senderName is string && data.senderName.size() >= 1 && data.senderName.size() <= 80
+        && data.cohort is string && data.cohort.size() >= 1 && data.cohort.size() <= 80
+        && data.category is string && data.category in [
+          'Lời chúc gửi Cô Ngọc Bảo',
+          'Kỷ niệm lớp học',
+          'Tri ân thầy cô bộ môn',
+          'Học trò cũ nhắn gửi'
+        ]
+        && data.message is string && data.message.size() >= 5 && data.message.size() <= 1000
+        && data.authorUid is string && data.authorUid.size() >= 1 && data.authorUid.size() <= 128
+        && data.isPublic is bool && data.isPublic == true
+        && data.createdAt is timestamp;
+    }
+
+    function isValidFlowerOffering(data) {
+      return data.keys().hasAll(['userId', 'senderName', 'createdAt'])
+        && data.keys().hasOnly(['userId', 'senderName', 'createdAt'])
+        && data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128
+        && data.senderName is string && data.senderName.size() >= 1 && data.senderName.size() <= 80
+        && data.createdAt is timestamp;
+    }
+
+    // Public tribute wishes for Cô Ngọc Bảo & teachers (no PII stored)
+    match /wishes/{wishId} {
+      allow get: if isValidId(wishId) && existing().isPublic == true;
+      allow list: if resource.data.isPublic == true;
+      allow create: if isVerifiedUser()
+        && isValidId(wishId)
+        && isValidWish(incoming())
+        && incoming().authorUid == request.auth.uid
+        && incoming().createdAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidId(wishId)
+        && isValidWish(incoming())
+        && (existing().authorUid == request.auth.uid || isAdmin())
+        && incoming().authorUid == existing().authorUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'teacherName',
+          'senderName',
+          'cohort',
+          'category',
+          'message'
+        ]);
+      allow delete: if isVerifiedUser()
+        && isValidId(wishId)
+        && (existing().authorUid == request.auth.uid || isAdmin());
+
+      // Per-wish flower reactions
+      match /flowers/{userId} {
+        allow get: if isValidId(wishId) && isValidId(userId) && existing().userId == userId;
+        allow list: if resource.data.userId is string;
+        allow create: if isVerifiedUser()
+          && isValidId(wishId)
+          && isValidId(userId)
+          && userId == request.auth.uid
+          && exists(/databases/$(database)/documents/wishes/$(wishId))
+          && isValidFlowerOffering(incoming())
+          && incoming().userId == request.auth.uid
+          && incoming().createdAt == request.time;
+        allow delete: if isVerifiedUser()
+          && isValidId(wishId)
+          && isValidId(userId)
+          && (userId == request.auth.uid || isAdmin());
+      }
+    }
+
+    // Bouquet flower offerings for Cô Ngọc Bảo
+    match /bouquetFlowers/{userId} {
+      allow get: if isValidId(userId) && existing().userId == userId;
+      allow list: if resource.data.userId is string;
+      allow create: if isVerifiedUser()
+        && isValidId(userId)
+        && userId == request.auth.uid
+        && isValidFlowerOffering(incoming())
+        && incoming().userId == request.auth.uid
+        && incoming().createdAt == request.time;
+      allow delete: if isVerifiedUser()
+        && isValidId(userId)
+        && (userId == request.auth.uid || isAdmin());
+    }
+  }
+}

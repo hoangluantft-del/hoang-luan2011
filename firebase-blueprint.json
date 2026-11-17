@@ -1,0 +1,114 @@
+{
+  "entities": {
+    "Wish": {
+      "title": "Wish",
+      "description": "A 20/11 Teacher's Day tribute wish written for any teacher at Trường THPT Nguyễn Trãi.",
+      "type": "object",
+      "properties": {
+        "teacherName": {
+          "type": "string",
+          "description": "Name of the teacher receiving the tribute (entered by the student).",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "senderName": {
+          "type": "string",
+          "description": "Display name of the student or class sending the wish.",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "cohort": {
+          "type": "string",
+          "description": "Class or cohort label (e.g. Lớp 12A1).",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "category": {
+          "type": "string",
+          "description": "Tribute category.",
+          "enum": [
+            "Thầy Cô Chủ Nhiệm",
+            "Thầy Cô Bộ Môn",
+            "Kỷ Niệm Mái Trường",
+            "Cựu Học Sinh Nhắn Gửi"
+          ],
+          "maxLength": 60
+        },
+        "message": {
+          "type": "string",
+          "description": "Heartfelt tribute message text.",
+          "minLength": 5,
+          "maxLength": 1000
+        },
+        "authorUid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the creator.",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "isPublic": {
+          "type": "boolean",
+          "description": "Visibility flag for public tribute wall display."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the wish was created."
+        }
+      },
+      "required": [
+        "teacherName",
+        "senderName",
+        "cohort",
+        "category",
+        "message",
+        "authorUid",
+        "isPublic",
+        "createdAt"
+      ]
+    },
+    "FlowerOffering": {
+      "title": "FlowerOffering",
+      "description": "A flower offering sent to teachers' bouquet or to a specific wish.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID of the student offering the flower.",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "senderName": {
+          "type": "string",
+          "description": "Display name of the sender.",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "isPublic": {
+          "type": "boolean",
+          "description": "Public visibility flag for bouquet counter."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of the offering."
+        }
+      },
+      "required": ["userId", "senderName", "isPublic", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/wishes/{wishId}": {
+      "schema": { "$ref": "#/entities/Wish" },
+      "description": "Public tribute wall wishes addressed to teachers chosen by students."
+    },
+    "/wishes/{wishId}/flowers/{userId}": {
+      "schema": { "$ref": "#/entities/FlowerOffering" },
+      "description": "Per-user flower reactions on a specific wish."
+    },
+    "/bouquetFlowers/{userId}": {
+      "schema": { "$ref": "#/entities/FlowerOffering" },
+      "description": "Per-user flower offerings for the school's 20/11 bouquet."
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "Tri Ân Thầy Cô 20/11 — Trường THPT Nguyễn Trãi",
+  "description": "Trang kỷ yếu sắc hồng tri ân quý Thầy Cô Trường THPT Nguyễn Trãi nhân Ngày Nhà Giáo Việt Nam 20/11.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

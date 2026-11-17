@@ -1,97 +1,25 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { CHALKBOARD_POEMS } from '../data/tributeData';
 import { BlossomFlower } from './FloralAccents';
 
-const MELODY_NOTES: Array<{ freq: number; duration: number }> = [
-  { freq: 392.0, duration: 0.55 },
-  { freq: 440.0, duration: 0.55 },
-  { freq: 523.25, duration: 0.85 },
-  { freq: 440.0, duration: 0.55 },
-  { freq: 392.0, duration: 0.55 },
-  { freq: 329.63, duration: 0.9 },
-  { freq: 293.66, duration: 0.55 },
-  { freq: 329.63, duration: 0.55 },
-  { freq: 392.0, duration: 0.85 },
-  { freq: 329.63, duration: 0.55 },
-  { freq: 293.66, duration: 0.55 },
-  { freq: 261.63, duration: 1.1 },
-];
+interface PoetryCornerProps {
+  isPlaying: boolean;
+  isMuted: boolean;
+  onTogglePlay: () => void;
+}
 
-export default function PoetryCorner() {
+export default function PoetryCorner({
+  isPlaying,
+  isMuted,
+  onTogglePlay,
+}: PoetryCornerProps) {
   const [activePoemId, setActivePoemId] = useState(CHALKBOARD_POEMS[0].id);
-  const [isPlaying, setIsPlaying] = useState(false);
-
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const timerRef = useRef<number | null>(null);
-  const stepRef = useRef(0);
 
   const activePoem =
     CHALKBOARD_POEMS.find((p) => p.id === activePoemId) ?? CHALKBOARD_POEMS[0];
 
-  const stopAudio = () => {
-    if (timerRef.current !== null) {
-      window.clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-    if (audioCtxRef.current) {
-      audioCtxRef.current.close().catch(() => {});
-      audioCtxRef.current = null;
-    }
-    setIsPlaying(false);
-  };
-
-  useEffect(() => {
-    return () => {
-      stopAudio();
-    };
-  }, []);
-
-  const scheduleNextNote = (ctx: AudioContext) => {
-    const note = MELODY_NOTES[stepRef.current % MELODY_NOTES.length];
-    stepRef.current += 1;
-
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(note.freq, now);
-
-    gain.gain.setValueAtTime(0.001, now);
-    gain.gain.exponentialRampToValueAtTime(0.07, now + 0.06);
-    gain.gain.exponentialRampToValueAtTime(0.0008, now + note.duration);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.start(now);
-    osc.stop(now + note.duration + 0.05);
-
-    timerRef.current = window.setTimeout(() => {
-      if (audioCtxRef.current) {
-        scheduleNextNote(audioCtxRef.current);
-      }
-    }, note.duration * 1000);
-  };
-
-  const togglePlay = () => {
-    if (isPlaying) {
-      stopAudio();
-      return;
-    }
-
-    const AudioCtx =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    if (!AudioCtx) return;
-
-    const ctx = new AudioCtx();
-    audioCtxRef.current = ctx;
-    stepRef.current = 0;
-    setIsPlaying(true);
-    scheduleNextNote(ctx);
-  };
+  const activeAudio = isPlaying && !isMuted;
 
   return (
     <section id="tho-nhac" className="border-b border-[#FBCFE8] bg-[#FFF8FA]">
@@ -111,15 +39,15 @@ export default function PoetryCorner() {
 
           <button
             type="button"
-            onClick={togglePlay}
-            aria-pressed={isPlaying}
+            onClick={onTogglePlay}
+            aria-pressed={activeAudio}
             className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-              isPlaying
+              activeAudio
                 ? 'bg-[#BE185D] text-white border-[#BE185D]'
                 : 'bg-white text-[#2E1021] border-[#FBCFE8] hover:bg-[#FCE7F3]'
             }`}
           >
-            {isPlaying ? (
+            {activeAudio ? (
               <>
                 <Volume2 className="w-4 h-4" aria-hidden="true" />
                 <span>Đang phát nhạc nền · Dừng</span>

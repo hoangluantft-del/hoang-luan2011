@@ -53,7 +53,8 @@ export interface PoemItem {
   reflection: string;
 }
 
-// 100% Real Photos of Trường THPT Nguyễn Trãi – Phan Rang
+// 100% Real Photos & Official Crest of Trường THPT Nguyễn Trãi – Phan Rang
+export const SCHOOL_LOGO = '/assets/aistudio/images__4__582dab1a.jpg';
 export const SCHOOL_HERO_BG = '/assets/aistudio/images__3__044e685a.jpg';
 export const SCHOOL_TEACHERS_CELEBRATION =
   '/assets/aistudio/482051672_981528617523931_2105918957699460004_n_6fac7df6.jpg';

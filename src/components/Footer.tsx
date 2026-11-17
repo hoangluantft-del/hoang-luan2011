@@ -1,5 +1,5 @@
 import { ArrowUp, Mail } from 'lucide-react';
-import { BlossomFlower } from './FloralAccents';
+import { SCHOOL_LOGO } from '../data/tributeData';
 
 export default function Footer() {
   const scrollToTop = () => {
@@ -9,11 +9,15 @@ export default function Footer() {
   return (
     <footer className="bg-[#FFF1F5] border-t border-[#FBCFE8]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-        <div className="flex items-start gap-3">
-          <BlossomFlower className="w-7 h-7 shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3.5">
+          <img
+            src={SCHOOL_LOGO}
+            alt="Logo Trường THPT Nguyễn Trãi"
+            className="h-12 w-auto object-contain bg-white rounded-lg border border-[#FBCFE8] p-1 shrink-0 mt-0.5"
+          />
           <div>
             <p className="font-serif text-lg font-semibold text-[#831843]">
-              Kỷ Niệm Ngày Nhà Giáo Việt Nam 20/11 — Trường THPT Nguyễn Trãi
+              Kỷ Niệm Ngày Nhà Giáo Việt Nam 20/11 — Trường THPT Nguyễn Trãi (1954)
             </p>
             <p className="mt-1 text-xs text-[#6B4C5B]">
               Trang lưu bút, thả hoa và thiết kế thiệp tri ân quý Thầy Cô nhân dịp 20/11.

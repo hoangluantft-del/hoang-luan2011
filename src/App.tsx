@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
 import {
   collection,
@@ -18,9 +18,12 @@ import TributeWall from './components/TributeWall';
 import CardStudio from './components/CardStudio';
 import PoetryCorner from './components/PoetryCorner';
 import Footer from './components/Footer';
+import FloatingMusicPlayer from './components/FloatingMusicPlayer';
+import { RoseFireworksOverlay } from './components/FloralAccents';
 import { TributeWish, WishCategory } from './data/tributeData';
 import { auth, db, googleProvider, handleFirestoreError, OperationType } from './lib/firebase';
 import { isValidWishImageDataUrl } from './lib/imageUtils';
+import { MusicTrackId } from './lib/musicEngine';
 
 function formatTimestampDate(ts: unknown): string {
   if (ts instanceof Timestamp) {
@@ -52,6 +55,11 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState<'Tất cả' | WishCategory>('Tất cả');
   const [composerOpen, setComposerOpen] = useState(true);
   const [draftCategory, setDraftCategory] = useState<WishCategory>('Thầy Cô Chủ Nhiệm');
+
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+  const [isMusicMuted, setIsMusicMuted] = useState(false);
+  const [activeTrack, setActiveTrack] = useState<MusicTrackId>('nguoi-thay');
+  const [playSignal, setPlaySignal] = useState(0);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
@@ -312,8 +320,31 @@ export default function App() {
     scrollToSection('luu-but');
   };
 
+  const handleToggleMusicPlay = () => {
+    if (!isMusicPlaying && isMusicMuted) {
+      setIsMusicMuted(false);
+    }
+    setPlaySignal((prev) => prev + 1);
+  };
+
+  const handleToggleMusicMute = () => {
+    setIsMusicMuted((prev) => !prev);
+  };
+
+  const handleSelectTrack = (track: MusicTrackId) => {
+    if (isMusicMuted) {
+      setIsMusicMuted(false);
+    }
+    setActiveTrack(track);
+  };
+
+  const handleSyncPlaying = useCallback((playing: boolean) => {
+    setIsMusicPlaying(playing);
+  }, []);
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#FFF8FA] text-[#2E1021]">
+    <div className="min-h-screen flex flex-col bg-[#FFF8FA] text-[#2E1021] relative">
+      <RoseFireworksOverlay />
       <Header
         onJumpToWishes={() => {
           setComposerOpen(true);
@@ -361,10 +392,24 @@ export default function App() {
 
         <CardStudio />
 
-        <PoetryCorner />
+        <PoetryCorner
+          isPlaying={isMusicPlaying}
+          isMuted={isMusicMuted}
+          onTogglePlay={handleToggleMusicPlay}
+        />
       </main>
 
       <Footer />
+
+      <FloatingMusicPlayer
+        isPlaying={isMusicPlaying}
+        isMuted={isMusicMuted}
+        activeTrack={activeTrack}
+        playSignal={playSignal}
+        onSyncPlaying={handleSyncPlaying}
+        onToggleMute={handleToggleMusicMute}
+        onSelectTrack={handleSelectTrack}
+      />
     </div>
   );
 }

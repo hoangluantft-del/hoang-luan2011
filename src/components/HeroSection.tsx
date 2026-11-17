@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { BookOpen, Flower2, HeartHandshake, Mail, PenLine } from 'lucide-react';
-import { SCHOOL_HERO_BG, SCHOOL_TEACHERS_CELEBRATION } from '../data/tributeData';
-import { BlossomFlower, BlossomSprig, DriftingPetals } from './FloralAccents';
+import { SCHOOL_HERO_BG, SCHOOL_LOGO, SCHOOL_TEACHERS_CELEBRATION } from '../data/tributeData';
+import { BlossomFlower, BlossomSprig } from './FloralAccents';
 
 interface HeroSectionProps {
   totalWishes: number;
@@ -36,7 +36,7 @@ export default function HeroSection({
           <span aria-hidden="true">·</span>
           <span>20/11/1982 – 20/11/2026</span>
           <span aria-hidden="true">·</span>
-          <span>Trường THPT Nguyễn Trãi – Phan Rang</span>
+          <span>Trường THPT Nguyễn Trãi – Phan Rang (1954)</span>
         </div>
       </div>
 
@@ -58,9 +58,6 @@ export default function HeroSection({
           className="absolute inset-0 bg-gradient-to-b from-[#3B0A22]/80 via-[#4A0E2B]/65 to-[#5B1336]/88"
         />
 
-        {/* Gentle drifting floral petals */}
-        <DriftingPetals />
-
         {/* Corner blossom sprigs */}
         <div className="hidden sm:block pointer-events-none absolute top-6 left-6 opacity-85">
           <BlossomSprig className="w-28 h-20" />
@@ -69,7 +66,15 @@ export default function HeroSection({
           <BlossomSprig className="w-28 h-20" />
         </div>
 
-        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 pt-14 pb-28 sm:pt-18 sm:pb-32 text-center">
+        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 pt-12 pb-28 sm:pt-14 sm:pb-32 text-center">
+          <div className="inline-flex items-center justify-center bg-white/95 rounded-xl px-3.5 py-2 shadow-md border border-[#FDE68A]/80 mb-5">
+            <img
+              src={SCHOOL_LOGO}
+              alt="Logo Trường THPT Nguyễn Trãi 1954"
+              className="h-14 sm:h-18 w-auto object-contain"
+            />
+          </div>
+
           <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.22em] text-[#FDE68A]">
             Lễ Kỷ Niệm Ngày Nhà Giáo Việt Nam · 20 tháng 11
           </p>

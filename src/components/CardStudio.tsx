@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Check, Copy, Download } from 'lucide-react';
-import { CARD_TEMPLATES, CardTemplate, WISH_PRESETS } from '../data/tributeData';
+import { CARD_TEMPLATES, CardTemplate, SCHOOL_LOGO, WISH_PRESETS } from '../data/tributeData';
 import { BlossomFlower } from './FloralAccents';
 
 function wrapCanvasText(
@@ -95,16 +95,43 @@ async function generateCardPng(
   drawCanvasBlossom(ctx, 118, height - 118, 28, template.borderHex, template.accentHex);
   drawCanvasBlossom(ctx, width - 118, height - 118, 28, template.borderHex, template.accentHex);
 
-  // Header kicker
+  // Header crest & kicker
+  let kickerY = 150;
+  try {
+    const logoImg = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('logo load failed'));
+      img.src = SCHOOL_LOGO;
+    });
+    const logoH = 74;
+    const logoW = Math.round((logoImg.width / Math.max(1, logoImg.height)) * logoH);
+    const padX = 14;
+    const padY = 8;
+    const boxW = logoW + padX * 2;
+    const boxH = logoH + padY * 2;
+    const boxX = width / 2 - boxW / 2;
+    const boxY = 92;
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.roundRect(boxX, boxY, boxW, boxH, 10);
+    ctx.fill();
+    ctx.drawImage(logoImg, boxX + padX, boxY + padY, logoW, logoH);
+    kickerY = 222;
+  } catch {
+    kickerY = 150;
+  }
+
   ctx.fillStyle = template.accentHex;
   ctx.font = '600 24px "Plus Jakarta Sans", sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('NGÀY NHÀ GIÁO VIỆT NAM  ·  20 / 11', width / 2, 150);
+  ctx.fillText('NGÀY NHÀ GIÁO VIỆT NAM  ·  20 / 11', width / 2, kickerY);
 
   // Divider line under kicker
   ctx.beginPath();
-  ctx.moveTo(width / 2 - 140, 182);
-  ctx.lineTo(width / 2 + 140, 182);
+  ctx.moveTo(width / 2 - 140, kickerY + 26);
+  ctx.lineTo(width / 2 + 140, kickerY + 26);
   ctx.strokeStyle = template.borderHex;
   ctx.lineWidth = 1.5;
   ctx.stroke();
@@ -112,15 +139,15 @@ async function generateCardPng(
   // Recipient Title
   ctx.fillStyle = template.textHex;
   ctx.font = '600 54px "Playfair Display", Georgia, serif';
-  ctx.fillText(`Kính gửi ${recipient || 'Quý Thầy Cô'}`, width / 2, 275);
+  ctx.fillText(`Kính gửi ${recipient || 'Quý Thầy Cô'}`, width / 2, kickerY + 102);
 
   // Body Message
   ctx.fillStyle = template.textHex;
   ctx.font = '400 32px "Plus Jakarta Sans", sans-serif';
   const maxWidth = 1120;
-  const lines = wrapCanvasText(ctx, message, maxWidth).slice(0, 10);
-  const lineHeight = 52;
-  const startY = 390;
+  const lines = wrapCanvasText(ctx, message, maxWidth).slice(0, 9);
+  const lineHeight = 50;
+  const startY = kickerY + 195;
 
   lines.forEach((line, idx) => {
     ctx.fillText(line, width / 2, startY + idx * lineHeight);
@@ -309,7 +336,7 @@ export default function CardStudio() {
           {/* Live Preview & Export Column */}
           <div className="lg:col-span-7 flex flex-col">
             <div
-              className="relative aspect-[3/2] w-full rounded-xl p-6 sm:p-10 flex flex-col justify-between transition-colors duration-200 border"
+              className="relative min-h-[360px] sm:aspect-[3/2] w-full rounded-xl p-5 sm:p-8 flex flex-col justify-between transition-colors duration-200 border"
               style={{
                 backgroundColor: activeTemplate.bgHex,
                 borderColor: activeTemplate.borderHex,
@@ -323,10 +350,17 @@ export default function CardStudio() {
               <BlossomFlower className="w-6 h-6 sm:w-8 sm:h-8 absolute bottom-3 right-3 pointer-events-none" />
 
               <div
-                className="w-full h-full border p-5 sm:p-8 flex flex-col justify-between text-center rounded-md"
+                className="w-full flex-1 border p-4 sm:p-6 flex flex-col justify-between text-center rounded-md"
                 style={{ borderColor: activeTemplate.borderHex }}
               >
                 <div>
+                  <div className="inline-flex items-center justify-center bg-white rounded-md px-2 py-1 mb-2 shadow-xs">
+                    <img
+                      src={SCHOOL_LOGO}
+                      alt="Logo Trường THPT Nguyễn Trãi"
+                      className="h-7 sm:h-9 w-auto object-contain"
+                    />
+                  </div>
                   <p
                     className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.2em] tabular-nums"
                     style={{ color: activeTemplate.accentHex }}
@@ -334,15 +368,15 @@ export default function CardStudio() {
                     Ngày Nhà Giáo Việt Nam · 20 / 11
                   </p>
                   <div
-                    className="w-24 h-px mx-auto my-3 opacity-60"
+                    className="w-24 h-px mx-auto my-2 opacity-60"
                     style={{ backgroundColor: activeTemplate.borderHex }}
                   />
-                  <h3 className="font-serif text-xl sm:text-3xl font-semibold leading-snug">
+                  <h3 className="font-serif text-xl sm:text-2xl font-semibold leading-snug">
                     Kính gửi {recipient.trim() || 'Quý Thầy Cô'}
                   </h3>
                 </div>
 
-                <p className="my-4 text-xs sm:text-base leading-relaxed max-w-lg mx-auto whitespace-pre-line">
+                <p className="my-3 text-xs sm:text-sm leading-relaxed max-w-lg mx-auto whitespace-pre-line">
                   {message.trim() || 'Kính chúc Thầy/Cô luôn thật nhiều sức khỏe và niềm vui.'}
                 </p>
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
+import { SCHOOL_LOGO } from '../data/tributeData';
 
 interface HeaderProps {
   onJumpToWishes: () => void;
@@ -17,13 +18,18 @@ export default function Header({ onJumpToWishes }: HeaderProps) {
 
   return (
     <header className="sticky top-0 z-40 bg-[#FFF8FA]/95 backdrop-blur-sm border-b border-[#FBCFE8]">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-8">
-        {/* Zone 1: Single-line Wordmark */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-6">
+        {/* Zone 1: School Logo + Single-line Wordmark */}
         <a
           href="#trang-chu"
-          className="font-serif text-xl font-semibold tracking-tight text-[#831843] whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#BE185D]"
+          className="inline-flex items-center gap-2.5 font-serif text-lg sm:text-xl font-semibold tracking-tight text-[#831843] whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#BE185D]"
         >
-          Tri Ân Thầy Cô 20/11
+          <img
+            src={SCHOOL_LOGO}
+            alt="Logo Trường THPT Nguyễn Trãi"
+            className="h-9 w-auto object-contain bg-white rounded-md border border-[#FBCFE8] px-1 py-0.5 shrink-0"
+          />
+          <span>Tri Ân Thầy Cô 20/11</span>
         </a>
 
         {/* Zone 2: Clean Text Navigation Links */}

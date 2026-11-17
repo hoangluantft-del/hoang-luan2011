@@ -22,6 +22,86 @@
   }
 }
 
+@keyframes rose-fall-sway-a {
+  0% {
+    transform: translate3d(0, -8vh, 0) rotate(0deg) scale(0.9);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.78;
+  }
+  35% {
+    transform: translate3d(26px, 32vh, 0) rotate(110deg) scale(1);
+  }
+  70% {
+    transform: translate3d(-22px, 72vh, 0) rotate(240deg) scale(0.95);
+    opacity: 0.72;
+  }
+  100% {
+    transform: translate3d(18px, 108vh, 0) rotate(360deg) scale(0.85);
+    opacity: 0;
+  }
+}
+
+@keyframes rose-fall-sway-b {
+  0% {
+    transform: translate3d(0, -8vh, 0) rotate(25deg) scale(0.85);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.74;
+  }
+  40% {
+    transform: translate3d(-30px, 38vh, 0) rotate(-95deg) scale(1.02);
+  }
+  75% {
+    transform: translate3d(20px, 76vh, 0) rotate(-210deg) scale(0.92);
+    opacity: 0.68;
+  }
+  100% {
+    transform: translate3d(-14px, 108vh, 0) rotate(-330deg) scale(0.82);
+    opacity: 0;
+  }
+}
+
+@keyframes rose-firework-bloom {
+  0%,
+  12% {
+    transform: scale(0.15) rotate(0deg);
+    opacity: 0;
+  }
+  20% {
+    transform: scale(0.75) rotate(18deg);
+    opacity: 0.85;
+  }
+  38% {
+    transform: scale(1.32) rotate(42deg);
+    opacity: 0.55;
+  }
+  52%,
+  100% {
+    transform: scale(1.75) rotate(65deg);
+    opacity: 0;
+  }
+}
+
+@keyframes rose-firework-core {
+  0%,
+  12% {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+  18% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  34%,
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;
@@ -34,13 +114,45 @@
     animation-iteration-count: infinite;
   }
 
+  .animate-rose-fall-a {
+    animation-name: rose-fall-sway-a;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    will-change: transform, opacity;
+  }
+
+  .animate-rose-fall-b {
+    animation-name: rose-fall-sway-b;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    will-change: transform, opacity;
+  }
+
+  .animate-rose-firework {
+    animation-name: rose-firework-bloom;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    animation-iteration-count: infinite;
+    will-change: transform, opacity;
+  }
+
+  .animate-rose-core {
+    animation-name: rose-firework-core;
+    animation-timing-function: ease-out;
+    animation-iteration-count: infinite;
+    will-change: transform, opacity;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     html {
       scroll-behavior: auto;
     }
-    .animate-petal {
+    .animate-petal,
+    .animate-rose-fall-a,
+    .animate-rose-fall-b,
+    .animate-rose-firework,
+    .animate-rose-core {
       animation: none;
-      opacity: 0.25;
+      opacity: 0;
     }
   }
 }

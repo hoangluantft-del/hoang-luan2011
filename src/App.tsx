@@ -274,6 +274,10 @@ export default function App() {
     setIsMusicPlaying(playing);
   }, []);
 
+  const handleSyncMuted = useCallback((muted: boolean) => {
+    setIsMusicMuted(muted);
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col bg-[#FFF8FA] text-[#2E1021] relative">
       <RoseFireworksOverlay />
@@ -332,6 +336,7 @@ export default function App() {
         activeTrack={activeTrack}
         playSignal={playSignal}
         onSyncPlaying={handleSyncPlaying}
+        onSyncMuted={handleSyncMuted}
         onToggleMute={handleToggleMusicMute}
         onSelectTrack={handleSelectTrack}
       />

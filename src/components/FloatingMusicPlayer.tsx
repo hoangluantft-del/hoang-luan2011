@@ -7,6 +7,7 @@ interface YTPlayerInstance {
   pauseVideo: () => void;
   mute: () => void;
   unMute: () => void;
+  getPlayerState: () => number;
   loadVideoById: (videoId: string) => void;
   destroy: () => void;
 }
@@ -43,6 +44,7 @@ interface FloatingMusicPlayerProps {
   activeTrack: MusicTrackId;
   playSignal: number;
   onSyncPlaying: (playing: boolean) => void;
+  onSyncMuted: (muted: boolean) => void;
   onToggleMute: () => void;
   onSelectTrack: (track: MusicTrackId) => void;
 }
@@ -53,23 +55,55 @@ export default function FloatingMusicPlayer({
   activeTrack,
   playSignal,
   onSyncPlaying,
+  onSyncMuted,
   onToggleMute,
   onSelectTrack,
 }: FloatingMusicPlayerProps) {
   const [expanded, setExpanded] = useState(false);
   const [playerReady, setPlayerReady] = useState(false);
+  const [waitingTapForSound, setWaitingTapForSound] = useState(false);
 
   const hostRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<YTPlayerInstance | null>(null);
   const loadedTrackRef = useRef<MusicTrackId>(activeTrack);
-  const pendingPlayRef = useRef(false);
   const lastSignalRef = useRef(playSignal);
+  const userStoppedRef = useRef(false);
+  const userMutedRef = useRef(false);
+  const isMutedRef = useRef(isMuted);
+
+  isMutedRef.current = isMuted;
 
   const currentMeta = MUSIC_TRACKS.find((t) => t.id === activeTrack) ?? MUSIC_TRACKS[0];
 
-  // Load YouTube IFrame API once and mount the compact player
+  // Auto-unmute and start playback on first page interaction if browser blocked initial sound
+  useEffect(() => {
+    if (!waitingTapForSound) return;
+
+    const unlockSound = () => {
+      setWaitingTapForSound(false);
+      if (userStoppedRef.current || userMutedRef.current) return;
+      const player = playerRef.current;
+      if (!player) return;
+      player.unMute();
+      player.playVideo();
+      onSyncMuted(false);
+    };
+
+    window.addEventListener('pointerdown', unlockSound, { capture: true, once: true, passive: true });
+    window.addEventListener('keydown', unlockSound, { capture: true, once: true, passive: true });
+    window.addEventListener('touchstart', unlockSound, { capture: true, once: true, passive: true });
+
+    return () => {
+      window.removeEventListener('pointerdown', unlockSound, { capture: true });
+      window.removeEventListener('keydown', unlockSound, { capture: true });
+      window.removeEventListener('touchstart', unlockSound, { capture: true });
+    };
+  }, [waitingTapForSound, onSyncMuted]);
+
+  // Load YouTube IFrame API once and auto-start music when entering the site
   useEffect(() => {
     let mounted = true;
+    let fallbackTimer: number | null = null;
 
     const initPlayer = () => {
       if (!mounted || !hostRef.current || !window.YT?.Player || playerRef.current) return;
@@ -77,7 +111,7 @@ export default function FloatingMusicPlayer({
       playerRef.current = new window.YT.Player(hostRef.current, {
         videoId: currentMeta.youtubeId,
         playerVars: {
-          autoplay: 0,
+          autoplay: 1,
           controls: 1,
           rel: 0,
           modestbranding: 1,
@@ -87,20 +121,38 @@ export default function FloatingMusicPlayer({
         },
         events: {
           onReady: () => {
-            if (!mounted) return;
+            if (!mounted || !playerRef.current) return;
             setPlayerReady(true);
-            if (isMuted) {
-              playerRef.current?.mute();
-            }
-            if (pendingPlayRef.current) {
-              pendingPlayRef.current = false;
-              playerRef.current?.playVideo();
+
+            if (!userStoppedRef.current) {
+              if (!userMutedRef.current) {
+                playerRef.current.unMute();
+              } else {
+                playerRef.current.mute();
+              }
+              playerRef.current.playVideo();
+
+              // If browser blocked unmuted autoplay, fall back to muted autoplay + unlock on 1st tap
+              fallbackTimer = window.setTimeout(() => {
+                if (!mounted || !playerRef.current || userStoppedRef.current) return;
+                const state = playerRef.current.getPlayerState?.();
+                const playingState = window.YT?.PlayerState?.PLAYING ?? 1;
+                if (state !== playingState) {
+                  playerRef.current.mute();
+                  playerRef.current.playVideo();
+                  onSyncMuted(true);
+                  setWaitingTapForSound(true);
+                }
+              }, 700);
             }
           },
           onStateChange: (event) => {
             if (!mounted || !window.YT?.PlayerState) return;
             if (event.data === window.YT.PlayerState.PLAYING) {
               onSyncPlaying(true);
+              if (!isMutedRef.current) {
+                setWaitingTapForSound(false);
+              }
             } else if (
               event.data === window.YT.PlayerState.PAUSED ||
               event.data === window.YT.PlayerState.ENDED
@@ -131,6 +183,9 @@ export default function FloatingMusicPlayer({
 
     return () => {
       mounted = false;
+      if (fallbackTimer !== null) {
+        window.clearTimeout(fallbackTimer);
+      }
       playerRef.current?.destroy();
       playerRef.current = null;
     };
@@ -151,47 +206,84 @@ export default function FloatingMusicPlayer({
   useEffect(() => {
     if (loadedTrackRef.current === activeTrack) return;
     loadedTrackRef.current = activeTrack;
+    userStoppedRef.current = false;
     if (!playerReady || !playerRef.current) return;
     const track = MUSIC_TRACKS.find((t) => t.id === activeTrack) ?? MUSIC_TRACKS[0];
+    playerRef.current.unMute();
     playerRef.current.loadVideoById(track.youtubeId);
+    onSyncMuted(false);
     onSyncPlaying(true);
-  }, [activeTrack, playerReady, onSyncPlaying]);
+  }, [activeTrack, playerReady, onSyncPlaying, onSyncMuted]);
 
   // Respond to external play/pause signals (e.g. from PoetryCorner)
   useEffect(() => {
     if (playSignal === lastSignalRef.current) return;
     lastSignalRef.current = playSignal;
-    if (!playerReady || !playerRef.current) {
-      pendingPlayRef.current = true;
-      return;
-    }
-    if (isPlaying) {
+    if (!playerReady || !playerRef.current) return;
+
+    if (isPlaying && !isMuted) {
+      userStoppedRef.current = true;
+      setWaitingTapForSound(false);
       playerRef.current.pauseVideo();
     } else {
+      userStoppedRef.current = false;
+      userMutedRef.current = false;
+      setWaitingTapForSound(false);
+      playerRef.current.unMute();
       playerRef.current.playVideo();
+      onSyncMuted(false);
     }
-  }, [playSignal, playerReady, isPlaying]);
+  }, [playSignal, playerReady, isPlaying, isMuted, onSyncMuted]);
 
   const handleTogglePlay = () => {
     if (!playerReady || !playerRef.current) {
-      pendingPlayRef.current = true;
       setExpanded(true);
       return;
     }
-    if (isPlaying) {
+
+    if (isPlaying && !isMuted) {
+      userStoppedRef.current = true;
+      setWaitingTapForSound(false);
       playerRef.current.pauseVideo();
     } else {
+      userStoppedRef.current = false;
+      userMutedRef.current = false;
+      setWaitingTapForSound(false);
       if (isMuted) {
-        onToggleMute();
+        onSyncMuted(false);
       }
+      playerRef.current.unMute();
       playerRef.current.playVideo();
     }
   };
 
+  const handleMuteButtonClick = () => {
+    if (!isMuted) {
+      userMutedRef.current = true;
+      setWaitingTapForSound(false);
+    } else {
+      userMutedRef.current = false;
+      userStoppedRef.current = false;
+      setWaitingTapForSound(false);
+      if (playerReady && playerRef.current && !isPlaying) {
+        playerRef.current.playVideo();
+      }
+    }
+    onToggleMute();
+  };
+
+  const statusText = waitingTapForSound
+    ? 'Chạm bất kỳ đâu để bật tiếng'
+    : isPlaying
+      ? isMuted
+        ? 'Đang tắt tiếng · Bấm loa để bật'
+        : 'Đang phát trọn bài · Bấm để tắt'
+      : 'Đã tắt nhạc · Bấm để phát';
+
   return (
     <aside
       aria-label="Trình phát nhạc tri ân 20/11"
-      className="fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-40 w-[248px] sm:w-[272px]"
+      className="fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-40 w-[256px] sm:w-[276px]"
     >
       <div className="bg-white/95 backdrop-blur-md border border-[#F9A8D4] rounded-xl shadow-lg overflow-hidden">
         {/* Compact Corner Header Bar */}
@@ -200,10 +292,10 @@ export default function FloatingMusicPlayer({
             <button
               type="button"
               onClick={handleTogglePlay}
-              aria-label={isPlaying ? 'Tạm dừng bài hát' : 'Phát trọn bài hát'}
+              aria-label={isPlaying && !isMuted ? 'Tắt nhạc nền' : 'Phát trọn bài hát'}
               className="w-7 h-7 rounded-full bg-white text-[#9D174D] hover:bg-[#FFF1F5] flex items-center justify-center shrink-0 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
             >
-              {isPlaying ? (
+              {isPlaying && !isMuted ? (
                 <Pause className="w-3.5 h-3.5 fill-current" aria-hidden="true" />
               ) : (
                 <Play className="w-3.5 h-3.5 fill-current ml-0.5" aria-hidden="true" />
@@ -217,20 +309,14 @@ export default function FloatingMusicPlayer({
                   {currentMeta.title} · {currentMeta.artist}
                 </p>
               </div>
-              <p className="text-[10px] text-[#FCE7F3] truncate">
-                {isPlaying
-                  ? isMuted
-                    ? 'Đang tắt tiếng'
-                    : 'Đang phát trọn bài'
-                  : 'Nhấn phát nhạc có lời'}
-              </p>
+              <p className="text-[10px] text-[#FCE7F3] truncate">{statusText}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-0.5 shrink-0">
             <button
               type="button"
-              onClick={onToggleMute}
+              onClick={handleMuteButtonClick}
               aria-pressed={isMuted}
               aria-label={isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
               title={isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
@@ -261,7 +347,11 @@ export default function FloatingMusicPlayer({
         </div>
 
         {/* Keep iframe mounted with real dimensions so full song plays smoothly even when minimized */}
-        <div className={expanded ? 'max-h-[220px] transition-all duration-200' : 'max-h-0 overflow-hidden'}>
+        <div
+          className={
+            expanded ? 'max-h-[220px] transition-all duration-200' : 'max-h-0 overflow-hidden'
+          }
+        >
           <div className="px-2 py-1.5 bg-[#FFF8FA] border-b border-[#FCE7F3] grid grid-cols-2 gap-1.5">
             {MUSIC_TRACKS.map((track) => {
               const selected = track.id === activeTrack;

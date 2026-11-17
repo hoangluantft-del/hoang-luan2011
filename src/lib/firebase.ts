@@ -1,12 +1,34 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
 import { doc, getDocFromServer, getFirestore } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();
+
+const VISITOR_STORAGE_KEY = 'nt_2011_visitor_id';
+let fallbackVisitorId: string | null = null;
+
+export function getOrCreateVisitorId(): string {
+  const generateId = () =>
+    `guest_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+
+  try {
+    const existing = window.localStorage.getItem(VISITOR_STORAGE_KEY);
+    if (existing && /^[a-zA-Z0-9_-]{6,64}$/.test(existing)) {
+      return existing;
+    }
+    const created = generateId();
+    window.localStorage.setItem(VISITOR_STORAGE_KEY, created);
+    return created;
+  } catch {
+    if (!fallbackVisitorId) {
+      fallbackVisitorId = generateId();
+    }
+    return fallbackVisitorId;
+  }
+}
 
 export enum OperationType {
   CREATE = 'create',
@@ -42,11 +64,11 @@ export function handleFirestoreError(
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
-      emailVerified: auth.currentUser?.emailVerified,
-      isAnonymous: auth.currentUser?.isAnonymous,
-      tenantId: auth.currentUser?.tenantId,
+      userId: auth.currentUser?.uid ?? null,
+      email: auth.currentUser?.email ?? null,
+      emailVerified: auth.currentUser?.emailVerified ?? null,
+      isAnonymous: auth.currentUser?.isAnonymous ?? null,
+      tenantId: auth.currentUser?.tenantId ?? null,
       providerInfo:
         auth.currentUser?.providerData?.map((provider) => ({
           providerId: provider.providerId,

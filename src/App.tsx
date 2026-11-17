@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
 import {
   collection,
   deleteDoc,
@@ -21,7 +20,12 @@ import Footer from './components/Footer';
 import FloatingMusicPlayer from './components/FloatingMusicPlayer';
 import { RoseFireworksOverlay } from './components/FloralAccents';
 import { TributeWish, WishCategory } from './data/tributeData';
-import { auth, db, googleProvider, handleFirestoreError, OperationType } from './lib/firebase';
+import {
+  db,
+  getOrCreateVisitorId,
+  handleFirestoreError,
+  OperationType,
+} from './lib/firebase';
 import { isValidWishImageDataUrl } from './lib/imageUtils';
 import { MusicTrackId } from './lib/musicEngine';
 
@@ -41,10 +45,7 @@ function formatTimestampDate(ts: unknown): string {
 }
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [authReady, setAuthReady] = useState(false);
-  const [isSigningIn, setIsSigningIn] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
+  const [visitorId] = useState<string>(() => getOrCreateVisitorId());
 
   const [firestoreWishes, setFirestoreWishes] = useState<TributeWish[]>([]);
   const [bouquetUserIds, setBouquetUserIds] = useState<string[]>([]);
@@ -60,14 +61,6 @@ export default function App() {
   const [isMusicMuted, setIsMusicMuted] = useState(false);
   const [activeTrack, setActiveTrack] = useState<MusicTrackId>('nguoi-thay');
   const [playSignal, setPlaySignal] = useState(0);
-
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
-      setAuthReady(true);
-    });
-    return () => unsub();
-  }, []);
 
   // Listen to public wishes in real time (zero pre-seeded wishes)
   useEffect(() => {
@@ -137,9 +130,7 @@ export default function App() {
         q,
         (snapshot) => {
           const count = snapshot.size;
-          const liked = currentUser
-            ? snapshot.docs.some((d) => d.id === currentUser.uid)
-            : false;
+          const liked = snapshot.docs.some((d) => d.id === visitorId);
           setWishFlowerCounts((prev) => ({ ...prev, [wish.id]: count }));
           setUserLikedWishIds((prev) => ({ ...prev, [wish.id]: liked }));
         },
@@ -152,12 +143,12 @@ export default function App() {
     return () => {
       unsubs.forEach((u) => u());
     };
-  }, [firestoreWishes, currentUser]);
+  }, [firestoreWishes, visitorId]);
 
-  const hasGivenBouquetFlower = useMemo(() => {
-    if (!currentUser) return false;
-    return bouquetUserIds.includes(currentUser.uid);
-  }, [bouquetUserIds, currentUser]);
+  const hasGivenBouquetFlower = useMemo(
+    () => bouquetUserIds.includes(visitorId),
+    [bouquetUserIds, visitorId]
+  );
 
   const totalFlowers = useMemo(() => {
     const firestoreWishFlowers = Object.values(wishFlowerCounts).reduce((a, b) => a + b, 0);
@@ -171,70 +162,26 @@ export default function App() {
     }
   };
 
-  const handleSignIn = async (): Promise<User | null> => {
-    setIsSigningIn(true);
-    setAuthError(null);
-    try {
-      const cred = await signInWithPopup(auth, googleProvider);
-      return cred.user;
-    } catch (err: unknown) {
-      const code =
-        typeof err === 'object' && err !== null && 'code' in err
-          ? String((err as { code?: unknown }).code)
-          : '';
-      const host = typeof window !== 'undefined' ? window.location.hostname : '';
-      if (code === 'auth/unauthorized-domain') {
-        setAuthError(
-          `Tên miền "${host}" chưa được cấp phép trong Firebase Authentication (auth/unauthorized-domain). Hãy vào Firebase Console -> Authentication -> Settings -> Authorized domains và thêm "${host}".`
-        );
-      } else if (code === 'auth/popup-blocked') {
-        setAuthError(
-          'Trình duyệt đã chặn cửa sổ đăng nhập Google (popup). Vui lòng cho phép popup cho trang web này rồi thử lại.'
-        );
-      } else if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
-        setAuthError(null);
-      } else if (code === 'auth/network-request-failed') {
-        setAuthError('Lỗi kết nối mạng khi đăng nhập Google. Vui lòng kiểm tra Internet và thử lại.');
-      } else {
-        const message = err instanceof Error ? err.message : String(err);
-        setAuthError(`Không thể đăng nhập Google (${code || 'lỗi không xác định'}): ${message}`);
-      }
-      return null;
-    } finally {
-      setIsSigningIn(false);
-    }
-  };
-
-  const handleSignOut = async () => {
-    await signOut(auth);
-  };
-
   const handleGiveBouquetFlower = async () => {
     setIsOfferingFlower(true);
     try {
-      let user = currentUser;
-      if (!user) {
-        user = await handleSignIn();
-      }
-      if (!user) return;
-
-      const ref = doc(db, 'bouquetFlowers', user.uid);
-      if (bouquetUserIds.includes(user.uid)) {
+      const ref = doc(db, 'bouquetFlowers', visitorId);
+      if (bouquetUserIds.includes(visitorId)) {
         try {
           await deleteDoc(ref);
         } catch (error) {
-          handleFirestoreError(error, OperationType.DELETE, `bouquetFlowers/${user.uid}`);
+          handleFirestoreError(error, OperationType.DELETE, `bouquetFlowers/${visitorId}`);
         }
       } else {
         try {
           await setDoc(ref, {
-            userId: user.uid,
-            senderName: (user.displayName || 'Học trò tri ân').slice(0, 80),
+            userId: visitorId,
+            senderName: 'Học trò tri ân',
             isPublic: true,
             createdAt: serverTimestamp(),
           });
         } catch (error) {
-          handleFirestoreError(error, OperationType.CREATE, `bouquetFlowers/${user.uid}`);
+          handleFirestoreError(error, OperationType.CREATE, `bouquetFlowers/${visitorId}`);
         }
       }
     } finally {
@@ -250,8 +197,8 @@ export default function App() {
     message: string;
     imageDataUrl?: string;
   }) => {
-    if (!currentUser) return;
-    const wishId = `w_${Date.now()}_${currentUser.uid.slice(0, 6)}`;
+    const randSuffix = Math.random().toString(36).slice(2, 8);
+    const wishId = `w_${Date.now()}_${randSuffix}`;
     const path = `wishes/${wishId}`;
     const payload: Record<string, unknown> = {
       teacherName: newWish.teacherName.slice(0, 100),
@@ -259,7 +206,7 @@ export default function App() {
       cohort: newWish.cohort.slice(0, 80),
       category: newWish.category,
       message: newWish.message.slice(0, 1000),
-      authorUid: currentUser.uid,
+      authorUid: visitorId,
       isPublic: true,
       createdAt: serverTimestamp(),
     };
@@ -275,24 +222,9 @@ export default function App() {
     }
   };
 
-  const handleDeleteWish = async (wishId: string) => {
-    const path = `wishes/${wishId}`;
-    try {
-      await deleteDoc(doc(db, 'wishes', wishId));
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, path);
-    }
-  };
-
   const handleToggleWishFlower = async (wishId: string) => {
-    let user = currentUser;
-    if (!user) {
-      user = await handleSignIn();
-    }
-    if (!user) return;
-
-    const path = `wishes/${wishId}/flowers/${user.uid}`;
-    const ref = doc(db, 'wishes', wishId, 'flowers', user.uid);
+    const path = `wishes/${wishId}/flowers/${visitorId}`;
+    const ref = doc(db, 'wishes', wishId, 'flowers', visitorId);
 
     if (userLikedWishIds[wishId]) {
       try {
@@ -303,8 +235,8 @@ export default function App() {
     } else {
       try {
         await setDoc(ref, {
-          userId: user.uid,
-          senderName: (user.displayName || 'Học trò tri ân').slice(0, 80),
+          userId: visitorId,
+          senderName: 'Học trò tri ân',
           isPublic: true,
           createdAt: serverTimestamp(),
         });
@@ -371,12 +303,6 @@ export default function App() {
           wishes={firestoreWishes}
           wishFlowerCounts={wishFlowerCounts}
           userLikedWishIds={userLikedWishIds}
-          currentUser={currentUser}
-          authReady={authReady}
-          isSigningIn={isSigningIn}
-          authError={authError}
-          onSignIn={handleSignIn}
-          onSignOut={handleSignOut}
           selectedCategory={selectedCategory}
           onSelectCategory={setSelectedCategory}
           composerOpen={composerOpen}
@@ -384,7 +310,6 @@ export default function App() {
           draftCategory={draftCategory}
           onChangeDraftCategory={setDraftCategory}
           onAddWish={handleAddWish}
-          onDeleteWish={handleDeleteWish}
           onToggleFlower={handleToggleWishFlower}
         />
 

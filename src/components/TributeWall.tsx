@@ -1,14 +1,10 @@
-import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { User } from 'firebase/auth';
+import { ChangeEvent, FormEvent, useMemo, useRef, useState } from 'react';
 import {
   CheckCircle2,
   Flower2,
   ImagePlus,
-  LogIn,
-  LogOut,
   PenLine,
   Search,
-  Trash2,
   X,
 } from 'lucide-react';
 import { TributeWish, WISH_CATEGORIES, WishCategory } from '../data/tributeData';
@@ -19,12 +15,6 @@ interface TributeWallProps {
   wishes: TributeWish[];
   wishFlowerCounts: Record<string, number>;
   userLikedWishIds: Record<string, boolean>;
-  currentUser: User | null;
-  authReady: boolean;
-  isSigningIn: boolean;
-  authError: string | null;
-  onSignIn: () => void;
-  onSignOut: () => void;
   selectedCategory: 'Tất cả' | WishCategory;
   onSelectCategory: (category: 'Tất cả' | WishCategory) => void;
   composerOpen: boolean;
@@ -39,7 +29,6 @@ interface TributeWallProps {
     message: string;
     imageDataUrl?: string;
   }) => Promise<void>;
-  onDeleteWish: (wishId: string) => Promise<void>;
   onToggleFlower: (wishId: string) => Promise<void>;
 }
 
@@ -47,12 +36,6 @@ export default function TributeWall({
   wishes,
   wishFlowerCounts,
   userLikedWishIds,
-  currentUser,
-  authReady,
-  isSigningIn,
-  authError,
-  onSignIn,
-  onSignOut,
   selectedCategory,
   onSelectCategory,
   composerOpen,
@@ -60,7 +43,6 @@ export default function TributeWall({
   draftCategory,
   onChangeDraftCategory,
   onAddWish,
-  onDeleteWish,
   onToggleFlower,
 }: TributeWallProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -75,12 +57,6 @@ export default function TributeWall({
   const [submitting, setSubmitting] = useState(false);
   const [justSubmitted, setJustSubmitted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-  useEffect(() => {
-    if (currentUser?.displayName && !senderName.trim()) {
-      setSenderName(currentUser.displayName.slice(0, 80));
-    }
-  }, [currentUser, senderName]);
 
   const filteredWishes = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -127,10 +103,6 @@ export default function TributeWall({
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!currentUser) {
-      setErrorMsg('Bạn vui lòng đăng nhập Google trước khi gửi lời chúc lên bảng chung.');
-      return;
-    }
 
     const cleanTeacher = teacherName.trim();
     const cleanSender = senderName.trim();
@@ -194,8 +166,8 @@ export default function TributeWall({
               Bức tường lời chúc tri ân các Thầy Cô
             </h2>
             <p className="mt-2 text-sm text-[#6B4C5B] max-w-xl">
-              Bạn muốn gửi lời chúc đến thầy cô nào, hãy tự điền tên thầy cô ấy vào bên dưới cùng
-              đóa hoa tươi nhé.
+              Không cần đăng nhập — bạn muốn gửi lời chúc đến thầy cô nào, chỉ cần điền tên thầy
+              cô ấy vào bên dưới cùng ảnh kỷ niệm (nếu có) và thả hoa tươi nhé.
             </p>
           </div>
 
@@ -229,239 +201,186 @@ export default function TributeWall({
           </div>
         )}
 
-        {/* Shared Wish Composer */}
+        {/* Shared Wish Composer — Open Directly Without Login */}
         {composerOpen && (
           <div className="mb-10 p-6 sm:p-8 bg-white border border-[#FBCFE8] rounded-xl shadow-xs">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 mb-6 border-b border-[#FCE7F3]">
-              <div>
-                <h3 className="font-serif text-xl font-semibold text-[#2E1021]">
-                  Gửi lời chúc tri ân đến Thầy / Cô của bạn
-                </h3>
-                <p className="text-xs text-[#6B4C5B] mt-1">
-                  Tự nhập tên thầy cô bạn muốn chúc mừng — lời chúc sẽ hiển thị ngay cho mọi người
-                  cùng xem.
-                </p>
-              </div>
-
-              {authReady && currentUser ? (
-                <div className="flex items-center gap-3 text-xs text-[#6B4C5B]">
-                  <span>
-                    Đang viết với{' '}
-                    <strong className="text-[#2E1021]">
-                      {currentUser.displayName || 'Thành viên'}
-                    </strong>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={onSignOut}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-[#831843] bg-[#FFF1F5] border border-[#FBCFE8] rounded-md hover:bg-[#FCE7F3] transition-colors cursor-pointer"
-                  >
-                    <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
-                    <span>Đăng xuất</span>
-                  </button>
-                </div>
-              ) : null}
+            <div className="pb-4 mb-6 border-b border-[#FCE7F3]">
+              <h3 className="font-serif text-xl font-semibold text-[#2E1021]">
+                Gửi lời chúc tri ân đến Thầy / Cô của bạn
+              </h3>
+              <p className="text-xs text-[#6B4C5B] mt-1">
+                Nhập tên thầy cô, lời chúc và ảnh kỷ niệm (tùy chọn) — lời chúc sẽ hiển thị ngay
+                cho mọi người cùng xem.
+              </p>
             </div>
 
-            {!authReady ? (
-              <p className="text-sm text-[#6B4C5B]">Đang kết nối bảng lưu bút...</p>
-            ) : !currentUser ? (
-              <div className="py-6 px-4 bg-[#FFF8FA] border border-[#FBCFE8] rounded-lg text-center">
-                <p className="font-serif text-lg font-medium text-[#2E1021]">
-                  Đăng nhập nhanh để viết lời chúc &amp; thả hoa
+            <form onSubmit={handleSubmit}>
+              {errorMsg && (
+                <p className="mb-4 px-3.5 py-2.5 text-sm text-[#9F1239] bg-[#FFF1F2] border border-[#FECDD3] rounded-md">
+                  {errorMsg}
                 </p>
-                <p className="mt-1.5 text-sm text-[#6B4C5B] max-w-lg mx-auto">
-                  Đăng nhập một chạm bằng Google để gửi lời chúc đến thầy cô bạn yêu quý và thả hoa
-                  trực tiếp trên bức tường chung.
-                </p>
-                <button
-                  type="button"
-                  onClick={onSignIn}
-                  disabled={isSigningIn}
-                  className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-[#BE185D] hover:bg-[#9D174D] disabled:opacity-60 rounded-md transition-colors cursor-pointer"
-                >
-                  <LogIn className="w-4 h-4" aria-hidden="true" />
-                  <span>
-                    {isSigningIn ? 'Đang mở đăng nhập...' : 'Đăng nhập Google để viết lời chúc'}
-                  </span>
-                </button>
-                {authError && (
-                  <p
-                    role="alert"
-                    className="mt-4 max-w-xl mx-auto px-3.5 py-2.5 text-xs sm:text-sm text-[#9F1239] bg-[#FFF1F2] border border-[#FECDD3] rounded-md text-left"
-                  >
-                    {authError}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit}>
-                {errorMsg && (
-                  <p className="mb-4 px-3.5 py-2.5 text-sm text-[#9F1239] bg-[#FFF1F2] border border-[#FECDD3] rounded-md">
-                    {errorMsg}
-                  </p>
-                )}
+              )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <div>
-                    <label
-                      htmlFor="wish-teacher"
-                      className="block text-sm font-medium text-[#2E1021] mb-1.5"
-                    >
-                      Kính gửi Thầy / Cô <span className="text-[#BE185D]">*</span>
-                    </label>
-                    <input
-                      id="wish-teacher"
-                      type="text"
-                      maxLength={100}
-                      value={teacherName}
-                      onChange={(e) => setTeacherName(e.target.value)}
-                      placeholder="Nhập tên thầy/cô (VD: Cô Ngọc Bảo, Thầy Minh...)"
-                      className="w-full px-3.5 py-2.5 text-sm bg-[#FFF8FA] border border-[#FBCFE8] rounded-md text-[#2E1021] placeholder:text-[#9D7A8C] focus:outline-none focus:border-[#BE185D] focus:bg-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="wish-category"
-                      className="block text-sm font-medium text-[#2E1021] mb-1.5"
-                    >
-                      Nhóm tri ân
-                    </label>
-                    <select
-                      id="wish-category"
-                      value={draftCategory}
-                      onChange={(e) => onChangeDraftCategory(e.target.value as WishCategory)}
-                      className="w-full px-3.5 py-2.5 text-sm bg-[#FFF8FA] border border-[#FBCFE8] rounded-md text-[#2E1021] focus:outline-none focus:border-[#BE185D] focus:bg-white"
-                    >
-                      {WISH_CATEGORIES.filter((c) => c !== 'Tất cả').map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="wish-sender"
-                      className="block text-sm font-medium text-[#2E1021] mb-1.5"
-                    >
-                      Tên của bạn <span className="text-[#BE185D]">*</span>
-                    </label>
-                    <input
-                      id="wish-sender"
-                      type="text"
-                      maxLength={80}
-                      value={senderName}
-                      onChange={(e) => setSenderName(e.target.value)}
-                      placeholder="Ví dụ: Nguyễn Minh Anh"
-                      className="w-full px-3.5 py-2.5 text-sm bg-[#FFF8FA] border border-[#FBCFE8] rounded-md text-[#2E1021] placeholder:text-[#9D7A8C] focus:outline-none focus:border-[#BE185D] focus:bg-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="wish-cohort"
-                      className="block text-sm font-medium text-[#2E1021] mb-1.5"
-                    >
-                      Lớp / Niên khóa
-                    </label>
-                    <input
-                      id="wish-cohort"
-                      type="text"
-                      maxLength={80}
-                      value={cohort}
-                      onChange={(e) => setCohort(e.target.value)}
-                      placeholder="Ví dụ: Lớp 12A1 hoặc Cựu học sinh"
-                      className="w-full px-3.5 py-2.5 text-sm bg-[#FFF8FA] border border-[#FBCFE8] rounded-md text-[#2E1021] placeholder:text-[#9D7A8C] focus:outline-none focus:border-[#BE185D] focus:bg-white"
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
                   <label
-                    htmlFor="wish-message"
+                    htmlFor="wish-teacher"
                     className="block text-sm font-medium text-[#2E1021] mb-1.5"
                   >
-                    Lời chúc gửi Thầy / Cô <span className="text-[#BE185D]">*</span>
+                    Kính gửi Thầy / Cô <span className="text-[#BE185D]">*</span>
                   </label>
-                  <textarea
-                    id="wish-message"
-                    rows={4}
-                    maxLength={1000}
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Viết những lời chúc tốt đẹp nhất gửi đến thầy cô nhân ngày 20/11..."
+                  <input
+                    id="wish-teacher"
+                    type="text"
+                    maxLength={100}
+                    value={teacherName}
+                    onChange={(e) => setTeacherName(e.target.value)}
+                    placeholder="Nhập tên thầy/cô (VD: Cô Ngọc Bảo, Thầy Minh...)"
                     className="w-full px-3.5 py-2.5 text-sm bg-[#FFF8FA] border border-[#FBCFE8] rounded-md text-[#2E1021] placeholder:text-[#9D7A8C] focus:outline-none focus:border-[#BE185D] focus:bg-white"
                   />
                 </div>
 
-                {/* Optional Photo Attachment */}
-                <div className="mt-5">
-                  <span className="block text-sm font-medium text-[#2E1021] mb-1.5">
-                    Ảnh kỷ niệm đính kèm <span className="text-xs font-normal text-[#6B4C5B]">(không bắt buộc)</span>
-                  </span>
+                <div>
+                  <label
+                    htmlFor="wish-category"
+                    className="block text-sm font-medium text-[#2E1021] mb-1.5"
+                  >
+                    Nhóm tri ân
+                  </label>
+                  <select
+                    id="wish-category"
+                    value={draftCategory}
+                    onChange={(e) => onChangeDraftCategory(e.target.value as WishCategory)}
+                    className="w-full px-3.5 py-2.5 text-sm bg-[#FFF8FA] border border-[#FBCFE8] rounded-md text-[#2E1021] focus:outline-none focus:border-[#BE185D] focus:bg-white"
+                  >
+                    {WISH_CATEGORIES.filter((c) => c !== 'Tất cả').map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
+                <div>
+                  <label
+                    htmlFor="wish-sender"
+                    className="block text-sm font-medium text-[#2E1021] mb-1.5"
+                  >
+                    Tên của bạn <span className="text-[#BE185D]">*</span>
+                  </label>
                   <input
-                    ref={fileInputRef}
-                    id="wish-photo"
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/*"
-                    onChange={handleImageSelect}
-                    className="sr-only"
+                    id="wish-sender"
+                    type="text"
+                    maxLength={80}
+                    value={senderName}
+                    onChange={(e) => setSenderName(e.target.value)}
+                    placeholder="Ví dụ: Nguyễn Minh Anh"
+                    className="w-full px-3.5 py-2.5 text-sm bg-[#FFF8FA] border border-[#FBCFE8] rounded-md text-[#2E1021] placeholder:text-[#9D7A8C] focus:outline-none focus:border-[#BE185D] focus:bg-white"
                   />
+                </div>
 
-                  {!imageDataUrl ? (
-                    <label
-                      htmlFor="wish-photo"
-                      className="flex flex-col sm:flex-row items-center justify-center gap-2.5 px-4 py-4 border border-dashed border-[#F472B6] bg-[#FFF8FA] hover:bg-[#FDF2F8] rounded-lg cursor-pointer transition-colors"
+                <div>
+                  <label
+                    htmlFor="wish-cohort"
+                    className="block text-sm font-medium text-[#2E1021] mb-1.5"
+                  >
+                    Lớp / Niên khóa
+                  </label>
+                  <input
+                    id="wish-cohort"
+                    type="text"
+                    maxLength={80}
+                    value={cohort}
+                    onChange={(e) => setCohort(e.target.value)}
+                    placeholder="Ví dụ: Lớp 12A1 hoặc Cựu học sinh"
+                    className="w-full px-3.5 py-2.5 text-sm bg-[#FFF8FA] border border-[#FBCFE8] rounded-md text-[#2E1021] placeholder:text-[#9D7A8C] focus:outline-none focus:border-[#BE185D] focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-5">
+                <label
+                  htmlFor="wish-message"
+                  className="block text-sm font-medium text-[#2E1021] mb-1.5"
+                >
+                  Lời chúc gửi Thầy / Cô <span className="text-[#BE185D]">*</span>
+                </label>
+                <textarea
+                  id="wish-message"
+                  rows={4}
+                  maxLength={1000}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Viết những lời chúc tốt đẹp nhất gửi đến thầy cô nhân ngày 20/11..."
+                  className="w-full px-3.5 py-2.5 text-sm bg-[#FFF8FA] border border-[#FBCFE8] rounded-md text-[#2E1021] placeholder:text-[#9D7A8C] focus:outline-none focus:border-[#BE185D] focus:bg-white"
+                />
+              </div>
+
+              {/* Optional Photo Attachment */}
+              <div className="mt-5">
+                <span className="block text-sm font-medium text-[#2E1021] mb-1.5">
+                  Ảnh kỷ niệm đính kèm{' '}
+                  <span className="text-xs font-normal text-[#6B4C5B]">(không bắt buộc)</span>
+                </span>
+
+                <input
+                  ref={fileInputRef}
+                  id="wish-photo"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/*"
+                  onChange={handleImageSelect}
+                  className="sr-only"
+                />
+
+                {!imageDataUrl ? (
+                  <label
+                    htmlFor="wish-photo"
+                    className="flex flex-col sm:flex-row items-center justify-center gap-2.5 px-4 py-4 border border-dashed border-[#F472B6] bg-[#FFF8FA] hover:bg-[#FDF2F8] rounded-lg cursor-pointer transition-colors"
+                  >
+                    <ImagePlus className="w-5 h-5 text-[#BE185D]" aria-hidden="true" />
+                    <span className="text-sm text-[#831843] font-medium">
+                      {processingImage
+                        ? 'Đang tối ưu kích thước ảnh...'
+                        : 'Chọn ảnh kỷ niệm cùng thầy cô từ thiết bị của bạn'}
+                    </span>
+                  </label>
+                ) : (
+                  <div className="relative inline-block rounded-lg overflow-hidden border border-[#FBCFE8] bg-[#FFF8FA]">
+                    <img
+                      src={imageDataUrl}
+                      alt="Xem trước ảnh đính kèm lời chúc"
+                      className="max-h-52 w-auto object-contain block"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleClearImage}
+                      aria-label="Xóa ảnh đính kèm"
+                      className="absolute top-2 right-2 inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-white bg-[#2E1021]/80 hover:bg-[#BE185D] rounded-md transition-colors cursor-pointer"
                     >
-                      <ImagePlus className="w-5 h-5 text-[#BE185D]" aria-hidden="true" />
-                      <span className="text-sm text-[#831843] font-medium">
-                        {processingImage
-                          ? 'Đang tối ưu kích thước ảnh...'
-                          : 'Chọn ảnh kỷ niệm cùng thầy cô từ thiết bị của bạn'}
-                      </span>
-                    </label>
-                  ) : (
-                    <div className="relative inline-block rounded-lg overflow-hidden border border-[#FBCFE8] bg-[#FFF8FA]">
-                      <img
-                        src={imageDataUrl}
-                        alt="Xem trước ảnh đính kèm lời chúc"
-                        className="max-h-52 w-auto object-contain block"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleClearImage}
-                        aria-label="Xóa ảnh đính kèm"
-                        className="absolute top-2 right-2 inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-white bg-[#2E1021]/80 hover:bg-[#BE185D] rounded-md transition-colors cursor-pointer"
-                      >
-                        <X className="w-3.5 h-3.5" aria-hidden="true" />
-                        <span>Xóa ảnh</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
+                      <X className="w-3.5 h-3.5" aria-hidden="true" />
+                      <span>Xóa ảnh</span>
+                    </button>
+                  </div>
+                )}
+              </div>
 
-                <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => onToggleComposer(false)}
-                    className="px-4 py-2 text-sm font-medium text-[#6B4C5B] hover:bg-[#FCE7F3] rounded-md transition-colors cursor-pointer"
-                  >
-                    Thu gọn
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submitting || processingImage}
-                    className="px-5 py-2 text-sm font-medium text-white bg-[#BE185D] hover:bg-[#9D174D] disabled:opacity-60 rounded-md transition-colors cursor-pointer"
-                  >
-                    {submitting ? 'Đang gửi...' : 'Gửi lời chúc lên bảng tri ân'}
-                  </button>
-                </div>
-              </form>
-            )}
+              <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => onToggleComposer(false)}
+                  className="px-4 py-2 text-sm font-medium text-[#6B4C5B] hover:bg-[#FCE7F3] rounded-md transition-colors cursor-pointer"
+                >
+                  Thu gọn
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting || processingImage}
+                  className="px-5 py-2 text-sm font-medium text-white bg-[#BE185D] hover:bg-[#9D174D] disabled:opacity-60 rounded-md transition-colors cursor-pointer"
+                >
+                  {submitting ? 'Đang gửi...' : 'Gửi lời chúc lên bảng tri ân'}
+                </button>
+              </div>
+            </form>
           </div>
         )}
 
@@ -554,10 +473,6 @@ export default function TributeWall({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredWishes.map((wish) => {
-              const canDelete =
-                currentUser &&
-                (wish.authorUid === currentUser.uid ||
-                  currentUser.email === 'hoangluantft@gmail.com');
               const flowerCount = wishFlowerCounts[wish.id] ?? 0;
               const liked = Boolean(userLikedWishIds[wish.id]);
 
@@ -567,22 +482,10 @@ export default function TributeWall({
                   className="flex flex-col justify-between p-6 bg-white border border-[#FBCFE8] rounded-xl"
                 >
                   <div>
-                    <div className="flex items-center justify-between gap-2 text-xs text-[#6B4C5B] tabular-nums">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="truncate">{wish.category}</span>
-                        <span aria-hidden="true">·</span>
-                        <span className="shrink-0">{wish.createdAt}</span>
-                      </div>
-                      {canDelete && (
-                        <button
-                          type="button"
-                          onClick={() => onDeleteWish(wish.id)}
-                          aria-label="Xóa lời chúc của bạn"
-                          className="p-1 text-[#9D7A8C] hover:text-[#BE185D] transition-colors cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
-                        </button>
-                      )}
+                    <div className="flex items-center gap-2 min-w-0 text-xs text-[#6B4C5B] tabular-nums">
+                      <span className="truncate">{wish.category}</span>
+                      <span aria-hidden="true">·</span>
+                      <span className="shrink-0">{wish.createdAt}</span>
                     </div>
 
                     <h3 className="mt-2 font-serif text-lg font-semibold text-[#831843]">

@@ -20,6 +20,7 @@ import PoetryCorner from './components/PoetryCorner';
 import Footer from './components/Footer';
 import { TributeWish, WishCategory } from './data/tributeData';
 import { auth, db, googleProvider, handleFirestoreError, OperationType } from './lib/firebase';
+import { isValidWishImageDataUrl } from './lib/imageUtils';
 
 function formatTimestampDate(ts: unknown): string {
   if (ts instanceof Timestamp) {
@@ -40,6 +41,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const [firestoreWishes, setFirestoreWishes] = useState<TributeWish[]>([]);
   const [bouquetUserIds, setBouquetUserIds] = useState<string[]>([]);
@@ -76,6 +78,10 @@ export default function App() {
             cohort: String(data.cohort || 'Học sinh Trường THPT Nguyễn Trãi'),
             category: (data.category as WishCategory) || 'Thầy Cô Chủ Nhiệm',
             message: String(data.message || ''),
+            imageDataUrl:
+              typeof data.imageDataUrl === 'string' && isValidWishImageDataUrl(data.imageDataUrl)
+                ? data.imageDataUrl
+                : undefined,
             authorUid: String(data.authorUid || ''),
             createdAt: formatTimestampDate(data.createdAt),
             createdAtMs,
@@ -159,10 +165,32 @@ export default function App() {
 
   const handleSignIn = async (): Promise<User | null> => {
     setIsSigningIn(true);
+    setAuthError(null);
     try {
       const cred = await signInWithPopup(auth, googleProvider);
       return cred.user;
-    } catch {
+    } catch (err: unknown) {
+      const code =
+        typeof err === 'object' && err !== null && 'code' in err
+          ? String((err as { code?: unknown }).code)
+          : '';
+      const host = typeof window !== 'undefined' ? window.location.hostname : '';
+      if (code === 'auth/unauthorized-domain') {
+        setAuthError(
+          `Tên miền "${host}" chưa được cấp phép trong Firebase Authentication (auth/unauthorized-domain). Hãy vào Firebase Console -> Authentication -> Settings -> Authorized domains và thêm "${host}".`
+        );
+      } else if (code === 'auth/popup-blocked') {
+        setAuthError(
+          'Trình duyệt đã chặn cửa sổ đăng nhập Google (popup). Vui lòng cho phép popup cho trang web này rồi thử lại.'
+        );
+      } else if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+        setAuthError(null);
+      } else if (code === 'auth/network-request-failed') {
+        setAuthError('Lỗi kết nối mạng khi đăng nhập Google. Vui lòng kiểm tra Internet và thử lại.');
+      } else {
+        const message = err instanceof Error ? err.message : String(err);
+        setAuthError(`Không thể đăng nhập Google (${code || 'lỗi không xác định'}): ${message}`);
+      }
       return null;
     } finally {
       setIsSigningIn(false);
@@ -212,21 +240,27 @@ export default function App() {
     cohort: string;
     category: WishCategory;
     message: string;
+    imageDataUrl?: string;
   }) => {
     if (!currentUser) return;
     const wishId = `w_${Date.now()}_${currentUser.uid.slice(0, 6)}`;
     const path = `wishes/${wishId}`;
+    const payload: Record<string, unknown> = {
+      teacherName: newWish.teacherName.slice(0, 100),
+      senderName: newWish.senderName.slice(0, 80),
+      cohort: newWish.cohort.slice(0, 80),
+      category: newWish.category,
+      message: newWish.message.slice(0, 1000),
+      authorUid: currentUser.uid,
+      isPublic: true,
+      createdAt: serverTimestamp(),
+    };
+    if (newWish.imageDataUrl && isValidWishImageDataUrl(newWish.imageDataUrl)) {
+      payload.imageDataUrl = newWish.imageDataUrl;
+    }
+
     try {
-      await setDoc(doc(db, 'wishes', wishId), {
-        teacherName: newWish.teacherName.slice(0, 100),
-        senderName: newWish.senderName.slice(0, 80),
-        cohort: newWish.cohort.slice(0, 80),
-        category: newWish.category,
-        message: newWish.message.slice(0, 1000),
-        authorUid: currentUser.uid,
-        isPublic: true,
-        createdAt: serverTimestamp(),
-      });
+      await setDoc(doc(db, 'wishes', wishId), payload);
       setSelectedCategory('Tất cả');
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, path);
@@ -309,6 +343,7 @@ export default function App() {
           currentUser={currentUser}
           authReady={authReady}
           isSigningIn={isSigningIn}
+          authError={authError}
           onSignIn={handleSignIn}
           onSignOut={handleSignOut}
           selectedCategory={selectedCategory}

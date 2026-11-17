@@ -47,6 +47,7 @@ service cloud.firestore {
           'cohort',
           'category',
           'message',
+          'imageDataUrl',
           'authorUid',
           'isPublic',
           'createdAt'
@@ -61,6 +62,12 @@ service cloud.firestore {
           'Cựu Học Sinh Nhắn Gửi'
         ]
         && data.message is string && data.message.size() >= 5 && data.message.size() <= 1000
+        && (!('imageDataUrl' in data) || (
+          data.imageDataUrl is string
+          && data.imageDataUrl.size() >= 20
+          && data.imageDataUrl.size() <= 350000
+          && data.imageDataUrl.matches('^data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$')
+        ))
         && data.authorUid is string && data.authorUid.size() >= 1 && data.authorUid.size() <= 128
         && data.isPublic is bool && data.isPublic == true
         && data.createdAt is timestamp;
@@ -95,7 +102,8 @@ service cloud.firestore {
           'senderName',
           'cohort',
           'category',
-          'message'
+          'message',
+          'imageDataUrl'
         ]);
       allow delete: if isVerifiedUser()
         && isValidId(wishId)

@@ -11,6 +11,7 @@ export interface TributeWish {
   cohort: string;
   category: WishCategory;
   message: string;
+  imageDataUrl?: string;
   authorUid?: string;
   createdAt: string;
   createdAtMs?: number;

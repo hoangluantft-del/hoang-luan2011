@@ -47,6 +47,7 @@ service cloud.firestore {
           'cohort',
           'category',
           'message',
+          'imageDataUrl',
           'authorUid',
           'isPublic',
           'createdAt'
@@ -55,26 +56,33 @@ service cloud.firestore {
         && data.senderName is string && data.senderName.size() >= 1 && data.senderName.size() <= 80
         && data.cohort is string && data.cohort.size() >= 1 && data.cohort.size() <= 80
         && data.category is string && data.category in [
-          'Lời chúc gửi Cô Ngọc Bảo',
-          'Kỷ niệm lớp học',
-          'Tri ân thầy cô bộ môn',
-          'Học trò cũ nhắn gửi'
+          'Thầy Cô Chủ Nhiệm',
+          'Thầy Cô Bộ Môn',
+          'Kỷ Niệm Mái Trường',
+          'Cựu Học Sinh Nhắn Gửi'
         ]
         && data.message is string && data.message.size() >= 5 && data.message.size() <= 1000
+        && (!('imageDataUrl' in data) || (
+          data.imageDataUrl is string
+          && data.imageDataUrl.size() >= 20
+          && data.imageDataUrl.size() <= 350000
+          && data.imageDataUrl.matches('^data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$')
+        ))
         && data.authorUid is string && data.authorUid.size() >= 1 && data.authorUid.size() <= 128
         && data.isPublic is bool && data.isPublic == true
         && data.createdAt is timestamp;
     }
 
     function isValidFlowerOffering(data) {
-      return data.keys().hasAll(['userId', 'senderName', 'createdAt'])
-        && data.keys().hasOnly(['userId', 'senderName', 'createdAt'])
+      return data.keys().hasAll(['userId', 'senderName', 'isPublic', 'createdAt'])
+        && data.keys().hasOnly(['userId', 'senderName', 'isPublic', 'createdAt'])
         && data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128
         && data.senderName is string && data.senderName.size() >= 1 && data.senderName.size() <= 80
+        && data.isPublic is bool && data.isPublic == true
         && data.createdAt is timestamp;
     }
 
-    // Public tribute wishes for Cô Ngọc Bảo & teachers (no PII stored)
+    // Public tribute wishes for teachers (no PII stored)
     match /wishes/{wishId} {
       allow get: if isValidId(wishId) && existing().isPublic == true;
       allow list: if resource.data.isPublic == true;
@@ -94,7 +102,8 @@ service cloud.firestore {
           'senderName',
           'cohort',
           'category',
-          'message'
+          'message',
+          'imageDataUrl'
         ]);
       allow delete: if isVerifiedUser()
         && isValidId(wishId)
@@ -102,8 +111,8 @@ service cloud.firestore {
 
       // Per-wish flower reactions
       match /flowers/{userId} {
-        allow get: if isValidId(wishId) && isValidId(userId) && existing().userId == userId;
-        allow list: if resource.data.userId is string;
+        allow get: if isValidId(wishId) && isValidId(userId) && existing().isPublic == true;
+        allow list: if resource.data.isPublic == true;
         allow create: if isVerifiedUser()
           && isValidId(wishId)
           && isValidId(userId)
@@ -119,10 +128,10 @@ service cloud.firestore {
       }
     }
 
-    // Bouquet flower offerings for Cô Ngọc Bảo
+    // Bouquet flower offerings for teachers
     match /bouquetFlowers/{userId} {
-      allow get: if isValidId(userId) && existing().userId == userId;
-      allow list: if resource.data.userId is string;
+      allow get: if isValidId(userId) && existing().isPublic == true;
+      allow list: if resource.data.isPublic == true;
       allow create: if isVerifiedUser()
         && isValidId(userId)
         && userId == request.auth.uid

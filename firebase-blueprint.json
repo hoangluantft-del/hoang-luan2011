@@ -40,6 +40,13 @@
           "minLength": 5,
           "maxLength": 1000
         },
+        "imageDataUrl": {
+          "type": "string",
+          "description": "Optional compressed JPEG/PNG/WebP base64 data URL attached to the wish.",
+          "minLength": 20,
+          "maxLength": 350000,
+          "pattern": "^data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$"
+        },
         "authorUid": {
           "type": "string",
           "description": "Firebase Auth UID of the creator.",

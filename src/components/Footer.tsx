@@ -1,4 +1,4 @@
-import { ArrowUp, Mail } from 'lucide-react';
+import { ArrowUp, Mail, MessageCircle } from 'lucide-react';
 import { SCHOOL_LOGO } from '../data/tributeData';
 
 export default function Footer() {
@@ -22,16 +22,30 @@ export default function Footer() {
             <p className="mt-1 text-xs text-[#6B4C5B]">
               Trang lưu bút, thả hoa và thiết kế thiệp tri ân quý Thầy Cô nhân dịp 20/11.
             </p>
-            <p className="mt-2 text-xs text-[#6B4C5B] flex items-center gap-1.5">
-              <Mail className="w-3.5 h-3.5 text-[#BE185D] shrink-0" aria-hidden="true" />
-              <span>Liên hệ ban biên tập:</span>
-              <a
-                href="mailto:hoangluantft@gmail.com"
-                className="font-medium text-[#831843] hover:text-[#BE185D] underline underline-offset-2"
-              >
-                hoangluantft@gmail.com
-              </a>
-            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[#6B4C5B]">
+              <p className="flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5 text-[#BE185D] shrink-0" aria-hidden="true" />
+                <span>Liên hệ ban biên tập:</span>
+                <a
+                  href="mailto:hoangluantft@gmail.com"
+                  className="font-medium text-[#831843] hover:text-[#BE185D] underline underline-offset-2"
+                >
+                  hoangluantft@gmail.com
+                </a>
+              </p>
+              <p className="flex items-center gap-1.5">
+                <MessageCircle className="w-3.5 h-3.5 text-[#BE185D] shrink-0" aria-hidden="true" />
+                <span>Zalo hỗ trợ:</span>
+                <a
+                  href="https://zalo.me/0372356269"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-[#831843] hover:text-[#BE185D] underline underline-offset-2"
+                >
+                  0372356269
+                </a>
+              </p>
+            </div>
           </div>
         </div>
 

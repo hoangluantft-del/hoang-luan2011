@@ -18,6 +18,7 @@ import CardStudio from './components/CardStudio';
 import PoetryCorner from './components/PoetryCorner';
 import Footer from './components/Footer';
 import FloatingMusicPlayer from './components/FloatingMusicPlayer';
+import ZaloSupportBubble from './components/ZaloSupportBubble';
 import { RoseFireworksOverlay } from './components/FloralAccents';
 import { TributeWish, WishCategory } from './data/tributeData';
 import {
@@ -329,6 +330,8 @@ export default function App() {
       </main>
 
       <Footer />
+
+      <ZaloSupportBubble />
 
       <FloatingMusicPlayer
         isPlaying={isMusicPlaying}

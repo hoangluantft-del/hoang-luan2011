@@ -7,6 +7,7 @@ interface YTPlayerInstance {
   pauseVideo: () => void;
   mute: () => void;
   unMute: () => void;
+  setVolume?: (volume: number) => void;
   isMuted?: () => boolean;
   getPlayerState: () => number;
   loadVideoById: (videoId: string) => void;
@@ -73,6 +74,7 @@ export default function FloatingMusicPlayer({
   const [expanded, setExpanded] = useState(true);
   const [playerReady, setPlayerReady] = useState(false);
   const [waitingTapForSound, setWaitingTapForSound] = useState(false);
+  const [needDirectFrameTap, setNeedDirectFrameTap] = useState(false);
 
   const hostRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<YTPlayerInstance | null>(null);
@@ -82,6 +84,7 @@ export default function FloatingMusicPlayer({
   const userStoppedRef = useRef(false);
   const userMutedRef = useRef(false);
   const hasUserGestureRef = useRef(false);
+  const autoCollapsedMobileRef = useRef(false);
   const isMobileRef = useRef<boolean>(isLikelyMobileDevice());
   const touchMovedRef = useRef(false);
   const isMutedRef = useRef(isMuted);
@@ -118,8 +121,9 @@ export default function FloatingMusicPlayer({
       if (!player) return;
 
       try {
-        player.unMute();
         player.playVideo();
+        player.unMute();
+        player.setVolume?.(100);
       } catch {
         // Ignore cross-origin edge errors before iframe finishes mounting
       }
@@ -135,10 +139,15 @@ export default function FloatingMusicPlayer({
         if (state === playingState && !stillMuted) {
           onSyncMuted(false);
           setWaitingTapForSound(false);
+          setNeedDirectFrameTap(false);
+          if (isMobileRef.current && !autoCollapsedMobileRef.current) {
+            autoCollapsedMobileRef.current = true;
+            setExpanded(false);
+          }
         } else {
           setWaitingTapForSound(true);
         }
-      }, 280);
+      }, 320);
     };
 
     window.addEventListener('touchstart', onTouchStart, { capture: true, passive: true });
@@ -191,10 +200,12 @@ export default function FloatingMusicPlayer({
             if (userStoppedRef.current) return;
 
             if (hasUserGestureRef.current && !userMutedRef.current) {
-              playerRef.current.unMute();
               playerRef.current.playVideo();
+              playerRef.current.unMute();
+              playerRef.current.setVolume?.(100);
               onSyncMuted(false);
               setWaitingTapForSound(false);
+              setNeedDirectFrameTap(false);
               return;
             }
 
@@ -219,6 +230,7 @@ export default function FloatingMusicPlayer({
             // Desktop: try unmuted autoplay first; if browser blocks initial sound, start muted and unlock on 1st click
             if (!userMutedRef.current) {
               playerRef.current.unMute();
+              playerRef.current.setVolume?.(100);
             } else {
               playerRef.current.mute();
             }
@@ -244,6 +256,11 @@ export default function FloatingMusicPlayer({
               if (!playerMuted && !userMutedRef.current) {
                 onSyncMuted(false);
                 setWaitingTapForSound(false);
+                setNeedDirectFrameTap(false);
+                if (isMobileRef.current && !autoCollapsedMobileRef.current) {
+                  autoCollapsedMobileRef.current = true;
+                  setExpanded(false);
+                }
               }
             } else if (
               event.data === window.YT.PlayerState.PAUSED ||
@@ -298,6 +315,7 @@ export default function FloatingMusicPlayer({
       playerRef.current.mute();
     } else if (!isMobileRef.current || hasUserGestureRef.current) {
       playerRef.current.unMute();
+      playerRef.current.setVolume?.(100);
     }
   }, [isMuted, playerReady]);
 
@@ -310,9 +328,11 @@ export default function FloatingMusicPlayer({
     userStoppedRef.current = false;
     userMutedRef.current = false;
     setWaitingTapForSound(false);
+    setNeedDirectFrameTap(false);
     if (!playerReady || !playerRef.current) return;
     const track = MUSIC_TRACKS.find((t) => t.id === activeTrack) ?? MUSIC_TRACKS[0];
     playerRef.current.unMute();
+    playerRef.current.setVolume?.(100);
     playerRef.current.loadVideoById(track.youtubeId);
     onSyncMuted(false);
     onSyncPlaying(true);
@@ -328,13 +348,16 @@ export default function FloatingMusicPlayer({
     if (isPlaying && !isMuted) {
       userStoppedRef.current = true;
       setWaitingTapForSound(false);
+      setNeedDirectFrameTap(false);
       playerRef.current.pauseVideo();
     } else {
       userStoppedRef.current = false;
       userMutedRef.current = false;
       setWaitingTapForSound(false);
-      playerRef.current.unMute();
+      setNeedDirectFrameTap(false);
       playerRef.current.playVideo();
+      playerRef.current.unMute();
+      playerRef.current.setVolume?.(100);
       onSyncMuted(false);
     }
   }, [playSignal, playerReady, isPlaying, isMuted, onSyncMuted]);
@@ -343,13 +366,34 @@ export default function FloatingMusicPlayer({
     hasUserGestureRef.current = true;
     userStoppedRef.current = false;
     userMutedRef.current = false;
-    setExpanded(true);
-    if (!playerReady || !playerRef.current) return;
+    if (!playerReady || !playerRef.current) {
+      setExpanded(true);
+      return;
+    }
 
-    playerRef.current.unMute();
     playerRef.current.playVideo();
-    onSyncMuted(false);
-    setWaitingTapForSound(false);
+    playerRef.current.unMute();
+    playerRef.current.setVolume?.(100);
+
+    window.setTimeout(() => {
+      if (!playerRef.current || userStoppedRef.current || userMutedRef.current) return;
+      const playingState = window.YT?.PlayerState?.PLAYING ?? 1;
+      const state = playerRef.current.getPlayerState?.();
+      const stillMuted = playerRef.current.isMuted?.() ?? false;
+      if (state === playingState && !stillMuted) {
+        onSyncMuted(false);
+        setWaitingTapForSound(false);
+        setNeedDirectFrameTap(false);
+        if (isMobileRef.current) {
+          autoCollapsedMobileRef.current = true;
+          setExpanded(false);
+        }
+      } else {
+        // Strict iOS / Zalo WebView may require tapping directly inside the YouTube player box
+        setExpanded(true);
+        setNeedDirectFrameTap(true);
+      }
+    }, 380);
   };
 
   const handleTogglePlay = () => {
@@ -362,16 +406,19 @@ export default function FloatingMusicPlayer({
     if (isPlaying && !isMuted) {
       userStoppedRef.current = true;
       setWaitingTapForSound(false);
+      setNeedDirectFrameTap(false);
       playerRef.current.pauseVideo();
     } else {
       userStoppedRef.current = false;
       userMutedRef.current = false;
       setWaitingTapForSound(false);
+      setNeedDirectFrameTap(false);
       if (isMuted) {
         onSyncMuted(false);
       }
-      playerRef.current.unMute();
       playerRef.current.playVideo();
+      playerRef.current.unMute();
+      playerRef.current.setVolume?.(100);
     }
   };
 
@@ -380,12 +427,15 @@ export default function FloatingMusicPlayer({
     if (!isMuted) {
       userMutedRef.current = true;
       setWaitingTapForSound(false);
+      setNeedDirectFrameTap(false);
     } else {
       userMutedRef.current = false;
       userStoppedRef.current = false;
       setWaitingTapForSound(false);
+      setNeedDirectFrameTap(false);
       if (playerReady && playerRef.current) {
         playerRef.current.unMute();
+        playerRef.current.setVolume?.(100);
         if (!isPlaying) {
           playerRef.current.playVideo();
         }
@@ -397,19 +447,21 @@ export default function FloatingMusicPlayer({
   const activeAudio = isPlaying && !isMuted;
 
   const statusText = waitingTapForSound
-    ? 'Chạm để bật tiếng nhạc'
+    ? needDirectFrameTap
+      ? 'Chạm nút ▶ trong khung dưới'
+      : 'Chạm để bật tiếng nhạc'
     : isPlaying
       ? isMuted
         ? 'Đang tắt tiếng · Bấm loa để bật'
-        : 'Đang phát trọn bài · Bấm để tắt'
-      : 'Đã tắt nhạc · Bấm để phát';
+        : 'Đang phát trọn bài · Bấm để thu/chọn bài'
+      : 'Đã tắt nhạc · Bấm ▶ để phát';
 
   return (
     <aside
       aria-label="Trình phát nhạc tri ân 20/11"
-      className="fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-40 w-[216px] sm:w-[260px]"
+      className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] right-3 sm:bottom-4 sm:right-4 z-40 w-[min(260px,calc(100vw-84px))] sm:w-[268px]"
     >
-      <div className="bg-white/95 backdrop-blur-md border border-[#F9A8D4] rounded-xl shadow-lg overflow-hidden transition-shadow duration-200">
+      <div className="bg-white/95 backdrop-blur-md border border-[#F9A8D4] rounded-2xl sm:rounded-xl shadow-lg overflow-hidden transition-shadow duration-200">
         {/* Compact Corner Header Bar */}
         <div
           data-music-controls="true"
@@ -421,14 +473,14 @@ export default function FloatingMusicPlayer({
               onClick={handleTogglePlay}
               aria-label={activeAudio ? 'Tạm dừng nhạc nền' : 'Phát trọn bài hát'}
               title={activeAudio ? 'Tạm dừng' : 'Phát nhạc'}
-              className={`w-8 h-8 rounded-full bg-white text-[#9D174D] hover:bg-[#FFF1F5] active:scale-95 flex items-center justify-center shrink-0 transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
+              className={`w-10 h-10 sm:w-8 sm:h-8 rounded-full bg-white text-[#9D174D] hover:bg-[#FFF1F5] active:scale-95 flex items-center justify-center shrink-0 transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
                 waitingTapForSound ? 'ring-2 ring-[#FDE68A]' : ''
               }`}
             >
               {activeAudio ? (
-                <Pause className="w-3.5 h-3.5 fill-current" aria-hidden="true" />
+                <Pause className="w-4 h-4 sm:w-3.5 sm:h-3.5 fill-current" aria-hidden="true" />
               ) : (
-                <Play className="w-3.5 h-3.5 fill-current ml-0.5" aria-hidden="true" />
+                <Play className="w-4 h-4 sm:w-3.5 sm:h-3.5 fill-current ml-0.5" aria-hidden="true" />
               )}
             </button>
 
@@ -436,8 +488,8 @@ export default function FloatingMusicPlayer({
               type="button"
               onClick={() => setExpanded((prev) => !prev)}
               aria-expanded={expanded}
-              title={expanded ? 'Nhấn để thu nhỏ trình phát' : 'Nhấn để mở rộng trình phát'}
-              className="min-w-0 flex-1 text-left cursor-pointer rounded px-0.5 py-0.5 hover:bg-white/10 transition-colors focus-visible:outline-2 focus-visible:outline-white"
+              title={expanded ? 'Nhấn để thu nhỏ trình phát' : 'Nhấn để đổi bài hoặc mở rộng'}
+              className="min-w-0 flex-1 min-h-[40px] sm:min-h-0 flex flex-col justify-center text-left cursor-pointer rounded px-0.5 py-0.5 hover:bg-white/10 transition-colors focus-visible:outline-2 focus-visible:outline-white"
             >
               <div className="flex items-center gap-1.5">
                 {activeAudio ? (
@@ -473,7 +525,7 @@ export default function FloatingMusicPlayer({
               aria-pressed={isMuted}
               aria-label={isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
               title={isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
-              className="w-8 h-8 rounded-lg hover:bg-white/15 active:scale-95 flex items-center justify-center transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-white"
+              className="w-9 h-9 sm:w-8 sm:h-8 rounded-lg hover:bg-white/15 active:scale-95 flex items-center justify-center transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-white"
             >
               {isMuted ? (
                 <VolumeX className="w-4 h-4 text-[#FDE68A]" aria-hidden="true" />
@@ -489,7 +541,7 @@ export default function FloatingMusicPlayer({
               aria-controls="floating-music-drawer"
               aria-label={expanded ? 'Thu nhỏ trình phát nhạc' : 'Mở rộng trình phát nhạc'}
               title={expanded ? 'Thu nhỏ' : 'Mở rộng'}
-              className="w-8 h-8 rounded-lg hover:bg-white/15 active:scale-95 flex items-center justify-center transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-white"
+              className="w-9 h-9 sm:w-8 sm:h-8 rounded-lg hover:bg-white/15 active:scale-95 flex items-center justify-center transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-white"
             >
               {expanded ? (
                 <ChevronDown className="w-4 h-4" aria-hidden="true" />
@@ -500,52 +552,62 @@ export default function FloatingMusicPlayer({
           </div>
         </div>
 
-        {/* Mobile-friendly one-tap unmute strip when browser holds sound */}
+        {/* Mobile-friendly 44px touch target strip to unlock audio with one tap */}
         {waitingTapForSound && (
           <button
             type="button"
             data-music-controls="true"
             onClick={handleTapToUnmute}
-            className="w-full px-2.5 py-2 bg-[#FFF1F5] hover:bg-[#FCE7F3] border-b border-[#F9A8D4] text-[#9D174D] text-[11px] font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+            className="w-full min-h-[42px] sm:min-h-[34px] px-3 py-2 bg-[#FFF1F5] hover:bg-[#FCE7F3] active:bg-[#FBCFE8] border-b border-[#F9A8D4] text-[#9D174D] text-xs sm:text-[11px] font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
           >
-            <Volume2 className="w-3.5 h-3.5 shrink-0 animate-pulse" aria-hidden="true" />
-            <span>Chạm vào đây để bật tiếng nhạc</span>
+            <Volume2 className="w-4 h-4 sm:w-3.5 sm:h-3.5 shrink-0 animate-pulse" aria-hidden="true" />
+            <span>
+              {needDirectFrameTap
+                ? 'Chạm nút ▶ trong video bên dưới để phát'
+                : 'Chạm vào đây để bật tiếng nhạc'}
+            </span>
           </button>
         )}
 
-        {/* Smooth GPU-friendly grid-row drawer collapse/expand while keeping audio iframe alive */}
+        {/* Drawer: keeps a 1px compositor-active frame when collapsed so iOS Safari never suspends background audio */}
         <div
           id="floating-music-drawer"
           aria-hidden={!expanded}
-          className={`grid transition-[grid-template-rows,opacity] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-            expanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0 pointer-events-none'
+          className={`transition-[max-height] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden ${
+            expanded ? 'max-h-[210px]' : 'max-h-[1px] pointer-events-none'
           }`}
         >
-          <div className="overflow-hidden">
-            <div className="px-2 py-1.5 bg-[#FFF8FA] border-b border-[#FCE7F3] grid grid-cols-2 gap-1.5">
-              {MUSIC_TRACKS.map((track) => {
-                const selected = track.id === activeTrack;
-                return (
-                  <button
-                    key={track.id}
-                    type="button"
-                    tabIndex={expanded ? 0 : -1}
-                    onClick={() => onSelectTrack(track.id)}
-                    className={`px-2 py-1.5 rounded text-[11px] font-medium border truncate transition-colors cursor-pointer ${
-                      selected
-                        ? 'bg-[#BE185D] text-white border-[#BE185D]'
-                        : 'bg-white text-[#6B4C5B] border-[#FBCFE8] hover:text-[#2E1021]'
-                    }`}
-                  >
-                    {track.title}
-                  </button>
-                );
-              })}
-            </div>
+          <div
+            className={`px-2 py-1.5 bg-[#FFF8FA] border-b border-[#FCE7F3] grid grid-cols-2 gap-1.5 transition-opacity duration-150 ${
+              expanded ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            {MUSIC_TRACKS.map((track) => {
+              const selected = track.id === activeTrack;
+              return (
+                <button
+                  key={track.id}
+                  type="button"
+                  tabIndex={expanded ? 0 : -1}
+                  onClick={() => onSelectTrack(track.id)}
+                  className={`min-h-[36px] sm:min-h-0 px-2 py-1.5 rounded-md text-xs sm:text-[11px] font-medium border truncate transition-colors cursor-pointer ${
+                    selected
+                      ? 'bg-[#BE185D] text-white border-[#BE185D]'
+                      : 'bg-white text-[#6B4C5B] border-[#FBCFE8] hover:text-[#2E1021]'
+                  }`}
+                >
+                  {track.title}
+                </button>
+              );
+            })}
+          </div>
 
-            <div className="w-full h-[108px] sm:h-[130px] bg-[#1C0D15]">
-              <div ref={hostRef} className="w-full h-full" />
-            </div>
+          <div
+            className={`w-full h-[96px] sm:h-[130px] bg-[#1C0D15] transition-opacity duration-150 ${
+              expanded ? 'opacity-100' : 'opacity-[0.01]'
+            }`}
+          >
+            <div ref={hostRef} className="w-full h-full" />
           </div>
         </div>
       </div>

@@ -30,7 +30,7 @@ export default function ZaloSupportBubble() {
   };
 
   return (
-    <div className="fixed bottom-3 left-3 sm:bottom-4 sm:left-4 z-40 flex flex-col items-start gap-2">
+    <div className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 sm:bottom-4 sm:left-4 z-40 flex flex-col items-start gap-2">
       {open && (
         <div
           role="dialog"

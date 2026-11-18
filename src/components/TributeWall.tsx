@@ -1,4 +1,4 @@
-import { ChangeEvent, FormEvent, useMemo, useRef, useState } from 'react';
+import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import {
   CheckCircle2,
   Flower2,
@@ -57,6 +57,17 @@ export default function TributeWall({
   const [submitting, setSubmitting] = useState(false);
   const [justSubmitted, setJustSubmitted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (!lightboxWish) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setLightboxWish(null);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [lightboxWish]);
 
   const filteredWishes = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -203,7 +214,7 @@ export default function TributeWall({
 
         {/* Shared Wish Composer — Open Directly Without Login */}
         {composerOpen && (
-          <div className="mb-10 p-6 sm:p-8 bg-white border border-[#FBCFE8] rounded-xl shadow-xs">
+          <div className="mb-10 p-4 sm:p-8 bg-white border border-[#FBCFE8] rounded-xl shadow-xs">
             <div className="pb-4 mb-6 border-b border-[#FCE7F3]">
               <h3 className="font-serif text-xl font-semibold text-[#2E1021]">
                 Gửi lời chúc tri ân đến Thầy / Cô của bạn
@@ -338,7 +349,7 @@ export default function TributeWall({
                     className="flex flex-col sm:flex-row items-center justify-center gap-2.5 px-4 py-4 border border-dashed border-[#F472B6] bg-[#FFF8FA] hover:bg-[#FDF2F8] rounded-lg cursor-pointer transition-colors"
                   >
                     <ImagePlus className="w-5 h-5 text-[#BE185D]" aria-hidden="true" />
-                    <span className="text-sm text-[#831843] font-medium">
+                    <span className="text-sm text-[#831843] font-medium text-center">
                       {processingImage
                         ? 'Đang tối ưu kích thước ảnh...'
                         : 'Chọn ảnh kỷ niệm cùng thầy cô từ thiết bị của bạn'}
@@ -479,7 +490,7 @@ export default function TributeWall({
               return (
                 <article
                   key={wish.id}
-                  className="flex flex-col justify-between p-6 bg-white border border-[#FBCFE8] rounded-xl"
+                  className="flex flex-col justify-between p-5 sm:p-6 bg-white border border-[#FBCFE8] hover:border-[#F472B6]/80 rounded-xl hover:shadow-sm transition-all duration-200"
                 >
                   <div>
                     <div className="flex items-center gap-2 min-w-0 text-xs text-[#6B4C5B] tabular-nums">
@@ -488,7 +499,7 @@ export default function TributeWall({
                       <span className="shrink-0">{wish.createdAt}</span>
                     </div>
 
-                    <h3 className="mt-2 font-serif text-lg font-semibold text-[#831843]">
+                    <h3 className="mt-2 font-serif text-lg font-semibold text-[#831843] break-words">
                       Kính gửi {wish.teacherName}
                     </h3>
 
@@ -506,7 +517,7 @@ export default function TributeWall({
                       </button>
                     )}
 
-                    <p className="mt-3 text-sm leading-[1.7] text-[#3B1E2D] whitespace-pre-line">
+                    <p className="mt-3 text-sm leading-[1.7] text-[#3B1E2D] whitespace-pre-line break-words">
                       “{wish.message}”
                     </p>
                   </div>
@@ -547,11 +558,11 @@ export default function TributeWall({
           role="dialog"
           aria-modal="true"
           aria-label={`Ảnh đính kèm từ ${lightboxWish.senderName}`}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4 overflow-y-auto"
           onClick={() => setLightboxWish(null)}
         >
           <div
-            className="relative max-w-3xl w-full bg-white rounded-xl overflow-hidden shadow-2xl"
+            className="animate-modal-enter relative max-w-3xl w-full bg-white rounded-xl overflow-hidden shadow-2xl my-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <button

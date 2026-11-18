@@ -112,7 +112,7 @@ export default function MemoryGallery({ onWriteTributeForCategory }: MemoryGalle
 
         {/* Full 16-photo Real School Album */}
         <div className="mt-14 pt-10 border-t border-[#FCE7F3]">
-          <div className="flex items-center justify-between gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 sm:gap-4 mb-6">
             <div>
               <h3 className="font-serif text-xl sm:text-2xl font-semibold text-[#2E1021]">
                 Album ảnh Trường THPT Nguyễn Trãi – Phan Rang
@@ -121,7 +121,7 @@ export default function MemoryGallery({ onWriteTributeForCategory }: MemoryGalle
                 Nhấn vào từng ảnh để xem kích thước đầy đủ
               </p>
             </div>
-            <span className="text-xs font-medium text-[#BE185D] tabular-nums">
+            <span className="text-xs font-medium text-[#BE185D] tabular-nums shrink-0">
               {SCHOOL_PHOTOS.length} ảnh kỷ niệm
             </span>
           </div>
@@ -164,7 +164,7 @@ export default function MemoryGallery({ onWriteTributeForCategory }: MemoryGalle
             }
           }}
         >
-          <div className="bg-[#FFF8FA] border border-[#FBCFE8] rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+          <div className="animate-modal-enter bg-[#FFF8FA] border border-[#FBCFE8] rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
             <div className="sticky top-0 z-10 flex items-center justify-between gap-4 px-6 py-4 bg-[#FFF8FA]/95 border-b border-[#FBCFE8]">
               <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-[#6B4C5B] tabular-nums">
                 <span>Chương {selectedMoment.index}</span>
@@ -270,7 +270,7 @@ export default function MemoryGallery({ onWriteTributeForCategory }: MemoryGalle
             if (e.target === e.currentTarget) setLightboxPhoto(null);
           }}
         >
-          <div className="relative max-w-4xl w-full bg-white border border-[#FBCFE8] rounded-xl overflow-hidden shadow-2xl">
+          <div className="animate-modal-enter relative max-w-4xl w-full bg-white border border-[#FBCFE8] rounded-xl overflow-hidden shadow-2xl">
             <button
               type="button"
               onClick={() => setLightboxPhoto(null)}

@@ -233,7 +233,7 @@ export default function CardStudio() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
           {/* Controls Column */}
-          <div className="lg:col-span-5 space-y-6 bg-[#FFF8FA] border border-[#FBCFE8] rounded-xl p-6">
+          <div className="lg:col-span-5 space-y-6 bg-[#FFF8FA] border border-[#FBCFE8] rounded-xl p-4 sm:p-6">
             <div>
               <span className="block text-sm font-medium text-[#2E1021] mb-2.5">
                 1. Chọn mẫu thiệp
@@ -371,12 +371,12 @@ export default function CardStudio() {
                     className="w-24 h-px mx-auto my-2 opacity-60"
                     style={{ backgroundColor: activeTemplate.borderHex }}
                   />
-                  <h3 className="font-serif text-xl sm:text-2xl font-semibold leading-snug">
+                  <h3 className="font-serif text-xl sm:text-2xl font-semibold leading-snug break-words">
                     Kính gửi {recipient.trim() || 'Quý Thầy Cô'}
                   </h3>
                 </div>
 
-                <p className="my-3 text-xs sm:text-sm leading-relaxed max-w-lg mx-auto whitespace-pre-line">
+                <p className="my-3 text-xs sm:text-sm leading-relaxed max-w-lg mx-auto whitespace-pre-line break-words">
                   {message.trim() || 'Kính chúc Thầy/Cô luôn thật nhiều sức khỏe và niềm vui.'}
                 </p>
 
@@ -386,7 +386,7 @@ export default function CardStudio() {
                     style={{ backgroundColor: activeTemplate.borderHex }}
                   />
                   <p
-                    className="font-serif italic text-xs sm:text-base"
+                    className="font-serif italic text-xs sm:text-base break-words"
                     style={{ color: activeTemplate.mutedHex }}
                   >
                     Trân trọng kính chúc — {sender.trim() || 'Học trò tri ân'}
@@ -401,11 +401,11 @@ export default function CardStudio() {
                 kèm họa tiết hoa ở bốn góc.
               </p>
 
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                 <button
                   type="button"
                   onClick={handleCopy}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#2E1021] bg-white border border-[#FBCFE8] hover:bg-[#FCE7F3] rounded-md transition-colors whitespace-nowrap cursor-pointer"
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 text-sm font-medium text-[#2E1021] bg-white border border-[#FBCFE8] hover:bg-[#FCE7F3] rounded-md transition-colors whitespace-nowrap cursor-pointer"
                 >
                   {copied ? (
                     <>
@@ -424,7 +424,7 @@ export default function CardStudio() {
                   type="button"
                   onClick={handleDownload}
                   disabled={downloading}
-                  className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-[#BE185D] hover:bg-[#9D174D] disabled:opacity-60 rounded-md transition-colors whitespace-nowrap cursor-pointer"
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 py-2.5 sm:py-2 text-sm font-medium text-white bg-[#BE185D] hover:bg-[#9D174D] disabled:opacity-60 rounded-md transition-colors whitespace-nowrap cursor-pointer"
                 >
                   <Download className="w-4 h-4" aria-hidden="true" />
                   <span>{downloading ? 'Đang tạo ảnh...' : 'Tải thiệp PNG'}</span>

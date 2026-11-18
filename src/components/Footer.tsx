@@ -8,7 +8,7 @@ export default function Footer() {
 
   return (
     <footer className="bg-[#FFF1F5] border-t border-[#FBCFE8]">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-28 sm:pb-24 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         <div className="flex items-start gap-3.5">
           <img
             src={SCHOOL_LOGO}

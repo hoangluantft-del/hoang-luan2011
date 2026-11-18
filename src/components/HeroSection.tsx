@@ -81,7 +81,7 @@ export default function HeroSection({
 
           <div className="w-28 h-px bg-[#FDE68A]/60 mx-auto my-4" aria-hidden="true" />
 
-          <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight text-white leading-[1.15] text-balance max-w-3xl mx-auto">
+          <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-semibold tracking-tight text-white leading-[1.15] text-balance max-w-3xl mx-auto">
             Chào Mừng Ngày Nhà Giáo Việt Nam 20/11
           </h1>
 
@@ -122,7 +122,7 @@ export default function HeroSection({
           <button
             type="button"
             onClick={onJumpToWishes}
-            className="group text-left bg-white hover:bg-[#FFF8FA] border border-[#FBCFE8] rounded-xl p-6 shadow-sm transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-[#BE185D]"
+            className="group text-left bg-white hover:bg-[#FFF8FA] border border-[#FBCFE8] hover:border-[#F472B6] rounded-xl p-5 sm:p-6 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#BE185D]"
           >
             <div className="w-11 h-11 rounded-lg bg-[#FCE7F3] text-[#BE185D] flex items-center justify-center mb-4">
               <PenLine className="w-5 h-5" aria-hidden="true" />
@@ -139,7 +139,7 @@ export default function HeroSection({
             type="button"
             onClick={onGiveBouquetFlower}
             disabled={isOfferingFlower}
-            className="group text-left bg-white hover:bg-[#FFF8FA] border border-[#FBCFE8] rounded-xl p-6 shadow-sm transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-[#BE185D]"
+            className="group text-left bg-white hover:bg-[#FFF8FA] border border-[#FBCFE8] hover:border-[#F472B6] rounded-xl p-5 sm:p-6 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#BE185D]"
           >
             <div className="w-11 h-11 rounded-lg bg-[#FCE7F3] text-[#BE185D] flex items-center justify-center mb-4">
               <Flower2 className="w-5 h-5" aria-hidden="true" />
@@ -155,7 +155,7 @@ export default function HeroSection({
           <button
             type="button"
             onClick={onJumpToCardStudio}
-            className="group text-left bg-white hover:bg-[#FFF8FA] border border-[#FBCFE8] rounded-xl p-6 shadow-sm transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-[#BE185D]"
+            className="group text-left bg-white hover:bg-[#FFF8FA] border border-[#FBCFE8] hover:border-[#F472B6] rounded-xl p-5 sm:p-6 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#BE185D]"
           >
             <div className="w-11 h-11 rounded-lg bg-[#FCE7F3] text-[#BE185D] flex items-center justify-center mb-4">
               <Mail className="w-5 h-5" aria-hidden="true" />
@@ -171,7 +171,7 @@ export default function HeroSection({
           <button
             type="button"
             onClick={onJumpToMemories}
-            className="group text-left bg-white hover:bg-[#FFF8FA] border border-[#FBCFE8] rounded-xl p-6 shadow-sm transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-[#BE185D]"
+            className="group text-left bg-white hover:bg-[#FFF8FA] border border-[#FBCFE8] hover:border-[#F472B6] rounded-xl p-5 sm:p-6 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#BE185D]"
           >
             <div className="w-11 h-11 rounded-lg bg-[#FCE7F3] text-[#BE185D] flex items-center justify-center mb-4">
               <BookOpen className="w-5 h-5" aria-hidden="true" />

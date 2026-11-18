@@ -394,6 +394,8 @@ export default function FloatingMusicPlayer({
     onToggleMute();
   };
 
+  const activeAudio = isPlaying && !isMuted;
+
   const statusText = waitingTapForSound
     ? 'Chạm để bật tiếng nhạc'
     : isPlaying
@@ -405,39 +407,63 @@ export default function FloatingMusicPlayer({
   return (
     <aside
       aria-label="Trình phát nhạc tri ân 20/11"
-      className="fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-40 w-[224px] sm:w-[256px]"
+      className="fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-40 w-[216px] sm:w-[260px]"
     >
-      <div className="bg-white/95 backdrop-blur-md border border-[#F9A8D4] rounded-xl shadow-lg overflow-hidden">
+      <div className="bg-white/95 backdrop-blur-md border border-[#F9A8D4] rounded-xl shadow-lg overflow-hidden transition-shadow duration-200">
         {/* Compact Corner Header Bar */}
         <div
           data-music-controls="true"
-          className="px-2.5 py-2 bg-gradient-to-r from-[#831843] via-[#9D174D] to-[#BE185D] text-white flex items-center justify-between gap-2"
+          className="px-2.5 py-2 bg-gradient-to-r from-[#831843] via-[#9D174D] to-[#BE185D] text-white flex items-center justify-between gap-1.5"
         >
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
             <button
               type="button"
               onClick={handleTogglePlay}
-              aria-label={isPlaying && !isMuted ? 'Tắt nhạc nền' : 'Phát trọn bài hát'}
-              className={`w-7 h-7 rounded-full bg-white text-[#9D174D] hover:bg-[#FFF1F5] flex items-center justify-center shrink-0 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
+              aria-label={activeAudio ? 'Tạm dừng nhạc nền' : 'Phát trọn bài hát'}
+              title={activeAudio ? 'Tạm dừng' : 'Phát nhạc'}
+              className={`w-8 h-8 rounded-full bg-white text-[#9D174D] hover:bg-[#FFF1F5] active:scale-95 flex items-center justify-center shrink-0 transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
                 waitingTapForSound ? 'ring-2 ring-[#FDE68A]' : ''
               }`}
             >
-              {isPlaying && !isMuted ? (
+              {activeAudio ? (
                 <Pause className="w-3.5 h-3.5 fill-current" aria-hidden="true" />
               ) : (
                 <Play className="w-3.5 h-3.5 fill-current ml-0.5" aria-hidden="true" />
               )}
             </button>
 
-            <div className="min-w-0">
-              <div className="flex items-center gap-1">
-                <Music className="w-3 h-3 text-[#FDE68A] shrink-0" aria-hidden="true" />
+            <button
+              type="button"
+              onClick={() => setExpanded((prev) => !prev)}
+              aria-expanded={expanded}
+              title={expanded ? 'Nhấn để thu nhỏ trình phát' : 'Nhấn để mở rộng trình phát'}
+              className="min-w-0 flex-1 text-left cursor-pointer rounded px-0.5 py-0.5 hover:bg-white/10 transition-colors focus-visible:outline-2 focus-visible:outline-white"
+            >
+              <div className="flex items-center gap-1.5">
+                {activeAudio ? (
+                  <span
+                    aria-hidden="true"
+                    className="inline-flex items-end gap-[2px] h-3 shrink-0"
+                  >
+                    <span className="w-[2px] h-full bg-[#FDE68A] rounded-full animate-music-eq" />
+                    <span
+                      className="w-[2px] h-full bg-[#FDE68A] rounded-full animate-music-eq"
+                      style={{ animationDelay: '180ms' }}
+                    />
+                    <span
+                      className="w-[2px] h-full bg-[#FDE68A] rounded-full animate-music-eq"
+                      style={{ animationDelay: '360ms' }}
+                    />
+                  </span>
+                ) : (
+                  <Music className="w-3 h-3 text-[#FDE68A] shrink-0" aria-hidden="true" />
+                )}
                 <p className="text-xs font-semibold truncate">
                   {currentMeta.title} · {currentMeta.artist}
                 </p>
               </div>
               <p className="text-[10px] text-[#FCE7F3] truncate">{statusText}</p>
-            </div>
+            </button>
           </div>
 
           <div className="flex items-center gap-0.5 shrink-0">
@@ -447,12 +473,12 @@ export default function FloatingMusicPlayer({
               aria-pressed={isMuted}
               aria-label={isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
               title={isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
-              className="w-6 h-6 rounded hover:bg-white/15 flex items-center justify-center transition-colors cursor-pointer"
+              className="w-8 h-8 rounded-lg hover:bg-white/15 active:scale-95 flex items-center justify-center transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-white"
             >
               {isMuted ? (
-                <VolumeX className="w-3.5 h-3.5 text-[#FDE68A]" aria-hidden="true" />
+                <VolumeX className="w-4 h-4 text-[#FDE68A]" aria-hidden="true" />
               ) : (
-                <Volume2 className="w-3.5 h-3.5 text-white" aria-hidden="true" />
+                <Volume2 className="w-4 h-4 text-white" aria-hidden="true" />
               )}
             </button>
 
@@ -460,14 +486,15 @@ export default function FloatingMusicPlayer({
               type="button"
               onClick={() => setExpanded((prev) => !prev)}
               aria-expanded={expanded}
-              aria-label={expanded ? 'Thu nhỏ trình phát' : 'Mở trình phát nhạc'}
+              aria-controls="floating-music-drawer"
+              aria-label={expanded ? 'Thu nhỏ trình phát nhạc' : 'Mở rộng trình phát nhạc'}
               title={expanded ? 'Thu nhỏ' : 'Mở rộng'}
-              className="w-6 h-6 rounded hover:bg-white/15 flex items-center justify-center transition-colors cursor-pointer"
+              className="w-8 h-8 rounded-lg hover:bg-white/15 active:scale-95 flex items-center justify-center transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-white"
             >
               {expanded ? (
-                <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
+                <ChevronDown className="w-4 h-4" aria-hidden="true" />
               ) : (
-                <ChevronUp className="w-3.5 h-3.5" aria-hidden="true" />
+                <ChevronUp className="w-4 h-4" aria-hidden="true" />
               )}
             </button>
           </div>
@@ -479,43 +506,46 @@ export default function FloatingMusicPlayer({
             type="button"
             data-music-controls="true"
             onClick={handleTapToUnmute}
-            className="w-full px-2.5 py-1.5 bg-[#FFF1F5] hover:bg-[#FCE7F3] border-b border-[#F9A8D4] text-[#9D174D] text-[11px] font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+            className="w-full px-2.5 py-2 bg-[#FFF1F5] hover:bg-[#FCE7F3] border-b border-[#F9A8D4] text-[#9D174D] text-[11px] font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
           >
             <Volume2 className="w-3.5 h-3.5 shrink-0 animate-pulse" aria-hidden="true" />
             <span>Chạm vào đây để bật tiếng nhạc</span>
           </button>
         )}
 
-        {/* Visible compact video box by default so Chrome/Safari & YouTube allow immediate autoplay */}
+        {/* Smooth GPU-friendly grid-row drawer collapse/expand while keeping audio iframe alive */}
         <div
-          className={
-            expanded
-              ? 'max-h-[210px] transition-all duration-200'
-              : 'max-h-0 overflow-hidden opacity-0 pointer-events-none'
-          }
+          id="floating-music-drawer"
+          aria-hidden={!expanded}
+          className={`grid transition-[grid-template-rows,opacity] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            expanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0 pointer-events-none'
+          }`}
         >
-          <div className="px-2 py-1.5 bg-[#FFF8FA] border-b border-[#FCE7F3] grid grid-cols-2 gap-1.5">
-            {MUSIC_TRACKS.map((track) => {
-              const selected = track.id === activeTrack;
-              return (
-                <button
-                  key={track.id}
-                  type="button"
-                  onClick={() => onSelectTrack(track.id)}
-                  className={`px-2 py-1 rounded text-[11px] font-medium border truncate transition-colors cursor-pointer ${
-                    selected
-                      ? 'bg-[#BE185D] text-white border-[#BE185D]'
-                      : 'bg-white text-[#6B4C5B] border-[#FBCFE8] hover:text-[#2E1021]'
-                  }`}
-                >
-                  {track.title}
-                </button>
-              );
-            })}
-          </div>
+          <div className="overflow-hidden">
+            <div className="px-2 py-1.5 bg-[#FFF8FA] border-b border-[#FCE7F3] grid grid-cols-2 gap-1.5">
+              {MUSIC_TRACKS.map((track) => {
+                const selected = track.id === activeTrack;
+                return (
+                  <button
+                    key={track.id}
+                    type="button"
+                    tabIndex={expanded ? 0 : -1}
+                    onClick={() => onSelectTrack(track.id)}
+                    className={`px-2 py-1.5 rounded text-[11px] font-medium border truncate transition-colors cursor-pointer ${
+                      selected
+                        ? 'bg-[#BE185D] text-white border-[#BE185D]'
+                        : 'bg-white text-[#6B4C5B] border-[#FBCFE8] hover:text-[#2E1021]'
+                    }`}
+                  >
+                    {track.title}
+                  </button>
+                );
+              })}
+            </div>
 
-          <div className="w-full h-[112px] sm:h-[130px] bg-[#1C0D15]">
-            <div ref={hostRef} className="w-full h-full" />
+            <div className="w-full h-[108px] sm:h-[130px] bg-[#1C0D15]">
+              <div ref={hostRef} className="w-full h-full" />
+            </div>
           </div>
         </div>
       </div>

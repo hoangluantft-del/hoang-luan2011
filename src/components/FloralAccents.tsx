@@ -164,13 +164,15 @@ export function RoseFireworksOverlay() {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none fixed inset-0 z-30 overflow-hidden"
+      className="pointer-events-none fixed inset-0 z-30 overflow-hidden [contain:strict]"
     >
-      {/* Gentle periodic rose firework blooms */}
+      {/* Gentle periodic rose firework blooms (limit to 2 corner bursts on small screens for 60fps) */}
       {ROSE_FIREWORK_BURSTS.map((burst, bIdx) => (
         <div
           key={`burst-${bIdx}`}
-          className="absolute -translate-x-1/2 -translate-y-1/2"
+          className={`absolute -translate-x-1/2 -translate-y-1/2 ${
+            bIdx >= 2 ? 'hidden sm:block' : ''
+          }`}
           style={{
             top: burst.top,
             left: burst.left,
@@ -202,7 +204,7 @@ export function RoseFireworksOverlay() {
                 }}
               >
                 <span
-                  className="block rounded-full shadow-[0_0_6px_rgba(244,114,182,0.5)]"
+                  className="block rounded-full"
                   style={{
                     width: pIdx % 2 === 0 ? '7px' : '5px',
                     height: pIdx % 2 === 0 ? '11px' : '8px',
@@ -225,12 +227,13 @@ export function RoseFireworksOverlay() {
         const animClass = item.variant.endsWith('a')
           ? 'animate-rose-fall-a'
           : 'animate-rose-fall-b';
+        const mobileVisibility = idx % 2 === 1 ? 'hidden sm:block' : '';
 
         if (isBlossom) {
           return (
             <div
               key={`fall-${idx}`}
-              className={`${animClass} absolute -top-8`}
+              className={`${animClass} ${mobileVisibility} absolute -top-8`}
               style={{
                 left: item.left,
                 width: `${item.size}px`,
@@ -239,7 +242,7 @@ export function RoseFireworksOverlay() {
                 animationDuration: item.duration,
               }}
             >
-              <BlossomFlower className="w-full h-full opacity-75 drop-shadow-[0_1px_2px_rgba(190,24,93,0.18)]" />
+              <BlossomFlower className="w-full h-full opacity-75" />
             </div>
           );
         }
@@ -247,14 +250,13 @@ export function RoseFireworksOverlay() {
         return (
           <span
             key={`fall-${idx}`}
-            className={`${animClass} absolute -top-8 block`}
+            className={`${animClass} ${mobileVisibility} absolute -top-8 block`}
             style={{
               left: item.left,
               width: `${item.size}px`,
               height: `${Math.round(item.size * 0.72)}px`,
               borderRadius: '65% 35% 65% 35%',
               background: `linear-gradient(135deg, #FCE7F3 0%, ${item.color} 100%)`,
-              boxShadow: '0 1px 4px rgba(190, 24, 93, 0.16)',
               animationDelay: item.delay,
               animationDuration: item.duration,
             }}

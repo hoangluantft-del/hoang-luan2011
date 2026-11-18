@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, Copy, ExternalLink, Phone, X } from 'lucide-react';
 
 const ZALO_PHONE = '0372356269';
@@ -7,6 +7,17 @@ const ZALO_URL = `https://zalo.me/${ZALO_PHONE}`;
 export default function ZaloSupportBubble() {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpen(false);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [open]);
 
   const handleCopy = async () => {
     try {
@@ -24,7 +35,7 @@ export default function ZaloSupportBubble() {
         <div
           role="dialog"
           aria-label="Thông tin Zalo hỗ trợ"
-          className="w-[228px] bg-white/95 backdrop-blur-md border border-[#BFDBFE] rounded-xl shadow-xl overflow-hidden"
+          className="animate-modal-enter w-[228px] max-w-[calc(100vw-24px)] bg-white/95 backdrop-blur-md border border-[#BFDBFE] rounded-xl shadow-xl overflow-hidden"
         >
           <div className="px-3 py-2 bg-[#0068FF] text-white flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
@@ -37,7 +48,7 @@ export default function ZaloSupportBubble() {
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Đóng hộp Zalo hỗ trợ"
-              className="w-6 h-6 rounded hover:bg-white/20 flex items-center justify-center transition-colors cursor-pointer"
+              className="w-7 h-7 rounded hover:bg-white/20 flex items-center justify-center transition-colors cursor-pointer"
             >
               <X className="w-3.5 h-3.5" aria-hidden="true" />
             </button>
@@ -46,7 +57,9 @@ export default function ZaloSupportBubble() {
           <div className="p-3 space-y-2.5">
             <div>
               <p className="text-[11px] text-[#6B4C5B]">Số Zalo liên hệ / hỗ trợ</p>
-              <p className="text-base font-bold tracking-wide text-[#0057D9]">{ZALO_PHONE}</p>
+              <p className="text-base font-bold tracking-wide text-[#0057D9] tabular-nums">
+                {ZALO_PHONE}
+              </p>
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -54,7 +67,7 @@ export default function ZaloSupportBubble() {
                 href={ZALO_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full py-1.5 px-2.5 rounded-lg bg-[#0068FF] hover:bg-[#0057D9] text-white text-xs font-semibold inline-flex items-center justify-center gap-1.5 transition-colors"
+                className="w-full py-2 px-2.5 rounded-lg bg-[#0068FF] hover:bg-[#0057D9] text-white text-xs font-semibold inline-flex items-center justify-center gap-1.5 transition-colors"
               >
                 <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
                 <span>Mở chat Zalo ngay</span>
@@ -98,18 +111,14 @@ export default function ZaloSupportBubble() {
         aria-expanded={open}
         aria-label={`Zalo hỗ trợ ${ZALO_PHONE}`}
         title={`Zalo hỗ trợ: ${ZALO_PHONE}`}
-        className="group relative flex items-center gap-2 rounded-full bg-[#0068FF] hover:bg-[#0057D9] text-white p-1.5 sm:pr-3.5 shadow-lg shadow-[#0068FF]/25 border-2 border-white transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0068FF]"
+        className="group relative flex items-center gap-2 rounded-full bg-[#0068FF] hover:bg-[#0057D9] active:scale-95 text-white p-1.5 sm:pr-3.5 shadow-lg shadow-[#0068FF]/25 border-2 border-white transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0068FF]"
       >
         <span className="relative flex items-center justify-center w-9 h-9 rounded-full bg-white text-[#0068FF] font-extrabold text-xs tracking-tight shrink-0">
           Zalo
-          <span
-            aria-hidden="true"
-            className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-[#0068FF]"
-          />
         </span>
         <span className="hidden sm:flex flex-col items-start leading-tight text-left">
           <span className="text-[10px] font-medium text-white/90">Zalo hỗ trợ</span>
-          <span className="text-xs font-bold tracking-wide">{ZALO_PHONE}</span>
+          <span className="text-xs font-bold tracking-wide tabular-nums">{ZALO_PHONE}</span>
         </span>
       </button>
     </div>
